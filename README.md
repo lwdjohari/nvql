@@ -31,42 +31,38 @@ StorageServerPtr server = PgServer(100,25);
 // StorageServerPtr server = OracleServer(100,25);
 
 // Create default transaction (read/write)
-TransactionPtr tx = server->Begin();
+auto tx = server->Begin();
 
 int32_t status_param = 1;
-ExecutionResultPtr result =
-    tx.Execute("select * from employee where status = $1", status_param);
+auto result =
+    tx->Execute("select * from employee where status = $1", status_param);
 
-if(!result.Empty()){
+if (!result->IsEmpty()) {
   for (auto row : *result) {
-        auto emp_id = (*row).As<int32_t>("emp_id");
-        auto emp_name = (*row).As<std::string>("emp_name");
-        auto dept_id = (*row).As<std::string>("dept_id");
-        auto sect_name = (*row).As<std::optional<std::string>>("sect_name");
-        auto status = (*row).As<int32_t>("status");
-        auto dob = (*row).As<nvm::dates::Datetime>("dob");
+    auto emp_id = row->As<int32_t>("emp_id");
+    auto emp_name = row->As<std::string>("emp_name");
+    auto dept_id = row->As<std::string>("dept_id");
+    auto sect_name = row->As<std::optional<std::string>>("sect_name");
+    auto status = row->As<int32_t>("status");
+    auto dob = row->As<nvm::dates::DateTime>("dob");
 
-        std::cout <<
-          "[" << emp_id << "] " <<
-          emp_name << " (" <<
-          dept_id << ":" <<
-          (sect_name.has_value()? sect_name.value() : "") << ", " <<
-          dob << ", " <<
-          status << ") <<
-          std::endl;
-        }
+    std::cout << "[" << emp_id << "] " << emp_name << " (" << dept_id << ":"
+              << (sect_name.has_value() ? sect_name.value() : "") << ", "
+              << dob << ", " << status
+              << ")" <<
+              std::endl;
+  }
 }
-
 // No need for manual tx.Rollback() or tx.Release
 // When TransactionPtr out-of-scope
 // automatically checking what need to do.
 ```
 ## Implementations
 
-NvQL by default make this as first-class citizen and being implement under-the-hood
+NvQL by default make this as the first-class citizen and being implement under-the-hood
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
-- Transaction Mode (Choosing different mode
+- Transaction Mode (options to choose different mode of transactions)
 - Binary Transport Protocol if supported & fallback mechanism
 - Prepared Statement (nvql manages this automatically and all execution)
 - Parameterized parameter (auto sanitazion)
