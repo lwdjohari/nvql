@@ -43,7 +43,7 @@ if(!result.Empty()){
         auto emp_name = (*row).As<std::string>("emp_name");
         auto dept_id = (*row).As<std::string>("dept_id");
         auto sect_name = (*row).As<std::optional<std::string>>("sect_name");
-        auto int32_t = (*row).As<int32_t>("status");
+        auto status = (*row).As<int32_t>("status");
         auto dob = (*row).As<nvm::dates::Datetime>("dob");
 
         std::cout <<
