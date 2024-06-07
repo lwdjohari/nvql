@@ -33,9 +33,9 @@ StorageServerPtr server = PgServer(100,25);
 // Create default transaction (read/write)
 TransactionPtr tx = server->Begin();
 
-int32_t status = 1;
+int32_t status_param = 1;
 ExecutionResultPtr result =
-    tx.Execute("select * from employee where status = $1", status);
+    tx.Execute("select * from employee where status = $1", status_param);
 
 if(!result.Empty()){
   for (auto row : *result) {
