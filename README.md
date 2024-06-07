@@ -48,7 +48,7 @@ if(!result.Empty()){
 
         std::cout <<
           "[" << emp_id << "] " <<
-          emp:name << " (" <<
+          emp_name << " (" <<
           dept_id << ":" <<
           (sect_name.has_value()? sect_name.value() : "") << ", " <<
           dob << ", " <<
