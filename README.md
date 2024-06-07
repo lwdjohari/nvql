@@ -61,6 +61,7 @@ if(!result.Empty()){
 // When TransactionPtr out-of-scope
 // automatically checking what need to do.
 ```
+## Implementations
 
 NvQL by default make this as first-class citizen and being implement under-the-hood
 - Cluster Connection & fallback mechanism
@@ -70,7 +71,7 @@ NvQL by default make this as first-class citizen and being implement under-the-h
 - Prepared Statement (nvql manages this automatically and all execution)
 - Parameterized parameter (auto sanitazion)
   
-nvql manages the acquire and returning coneection and <br/>
+nvql manages the acquire and returning connection and <br/>
 wiring all the necessity of transaction <br/>
 even the prepared statement execution.
 
