@@ -2,9 +2,9 @@
 Unified Data Layer Library for postgres, oracle, mysql &amp; sqlite database for C++ 14 &amp; 17.<br/>
 
 ```NvQL``` is being developed primarily for NvServ, a rapid server framework for modern c++ data layer.<br/>
-Serving for easy to use low overhead unified abstraction data layer.<br/>
+Serving for easy to use low overhead unified abstraction data layer
 
-Database supported
+<u>Database supported</u>
 - Postgres : WIP
 - Oracle : WIP
 - Mysql : Plan
