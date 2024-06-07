@@ -14,11 +14,10 @@ Serving for easy to use low overhead unified abstraction data layer
 > Currently compatibility with C++14 is not yet throughly tested.<br/>
 > Status : WIP, Experimental & Unstable.
 
-## Design concept
+## Design Concept
 
 Inspired by userver microservice framework,<br/>
 we're decided to take it further into unified data layer.<br/>
-<br/>
 
 In-short, no matter database you use, all the API design are same acrross different DB.<br/>
 High quality, High productivity whatever database you choose.
@@ -29,7 +28,7 @@ High quality, High productivity whatever database you choose.
 StorageServerPtr server = PgServer(100,25);
 
 // what if we use oracle as our DB
-//StorageServerPtr server = OracleServer(100,25);
+// StorageServerPtr server = OracleServer(100,25);
 
 // Create default transaction (read/write)
 TransactionPtr tx = server->Begin();
