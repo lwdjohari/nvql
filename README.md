@@ -9,33 +9,9 @@ Serving for easy to use low overhead unified abstraction data layer
 > [!WARNING]
 > Currently compatibility with C++14 is not yet throughly tested.<br/>
 > Status : WIP, Experimental & Unstable.
-> 
-### <u>Database supported</u>
-- Postgres : WIP
-- Oracle : WIP
-- Mysql : Plan
-- Sqlite: Plan
+>
 
-  
-### Namespace Notes
-When using standalone library from this repo.
-The root name is same with root namespace from NvServ
-
-NvQL Namespace<br/>
-NvQL was developed as part of NvServ so to retain interoperability between standalone & nvserv, 
-NvQL still keep the namespace of nvserv
-
-```cpp
-  namespace nvserv::storages
-```
-
-## Design Concept
-
-Inspired by userver microservice framework,<br/>
-we're decided to take it further into unified data layer.<br/>
-
-In-short, no matter database you use, all the API design are consistent and polymorphed across different DB.<br/>
-High quality, High productivity whatever database you choose.
+Example
 
 ```cxx
 
@@ -72,6 +48,34 @@ if (!result->IsEmpty()) {
 // When TransactionPtr out-of-scope
 // automatically checking what need to do.
 ```
+
+### <u>Database supported</u>
+- Postgres : WIP
+- Oracle : WIP
+- Mysql : Plan
+- Sqlite: Plan
+
+  
+### Namespace Notes
+When using standalone library from this repo.
+The root name is same with root namespace from NvServ
+
+NvQL Namespace<br/>
+NvQL was developed as part of NvServ so to retain interoperability between standalone & nvserv, 
+NvQL still keep the namespace of nvserv
+
+```cpp
+  namespace nvserv::storages
+```
+
+## Design Concept
+
+Inspired by userver microservice framework,<br/>
+we're decided to take it further into unified data layer.<br/>
+
+In-short, no matter database you use, all the API design are consistent and polymorphed across different DB.<br/>
+High quality, High productivity whatever database you choose.
+
 ## Query Execution Implementations
 
 NvQL by default decided the query execution approach only took certain methods and declare the approach as the first-class citizen and being implement under-the-hood.
