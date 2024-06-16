@@ -15,38 +15,59 @@ Example
 
 ```cxx
 
-// Using the storage-config.yaml
-StorageServerPtr server = PgServer(100,25);
+#include <iostream>
+#include <memory>
 
-// what if we use oracle as our DB
-// StorageServerPtr server = OracleServer(100,25);
+#include "nvserv/storages/postgres/pg_server.h"
 
-// Create default transaction (read/write)
-auto tx = server->Begin();
+int main() {
+  using namespace nvserv::storages;
 
-int32_t status_param = 1;
-auto result =
-    tx->Execute("select * from employee where status = $1", status_param);
+  // Only clusters, DB server declaration and dialect that are DB Specific
+  // For NvQL executions are abstracted through unified API.
+   
+  // Connect to standalone Postgress DB Server
+  // Connection pool with 5 connections standby, max 10 connections
+  auto clusters = {postgres::PgClusterConfig(
+      "db-example", "the-user", "the-password", "localhost", 5433)};
+  StorageServerPtr server = std::make_shared<postgres::PgServer>(clusters, 5, 10);
 
-if (!result->IsEmpty()) {
-  for (auto row : *result) {
-    auto emp_id = row->As<int32_t>("emp_id");
-    auto emp_name = row->As<std::string>("emp_name");
-    auto dept_id = row->As<std::string>("dept_id");
-    auto sect_name = row->As<std::optional<std::string>>("sect_name");
-    auto status = row->As<int32_t>("status");
-    auto dob = row->As<nvm::dates::DateTime>("dob");
+  try {
+    server->TryConnect();
+    auto tx = server->Begin();
 
-    std::cout << "[" << emp_id << "] " << emp_name << " (" << dept_id << ":"
-              << (sect_name.has_value() ? sect_name.value() : "") << ", "
-              << dob << ", " << status
-              << ")" <<
-              std::endl;
+    int32_t customer_status = 1;
+    auto result = tx->Execute("select * from customer where status = $1",
+                              customer_status);
+
+    if (result->Empty()) {
+      std::cout << "No customers data.." << std::endl;
+      server->Shutdown();
+      return 0;
+    }
+
+    for (const auto row : *result) {
+      auto cust_id = row->As<int32_t>("cust_id");
+      auto name = row->As<std::string>("name");
+      auto member_type = row->As<std::string>("member_type");
+      auto phone_number = row->As<std::string>("phone_number");
+      auto status = row->As<int32_t>("status");
+      auto dob = row->AsDateTimeOffset<nvm::dates::DateTime>("dob");
+
+      std::cout << "[" << cust_id << "] " << name << " (" << member_type << ":"
+                << phone_number << ", " << dob << ", " << status << ")"
+                << std::endl;
+    }
+
+    server->Shutdown();
+
+  } catch (const StorageException& e) {
+    std::cerr << e.what() << '\n';
   }
+
+  return 0;
 }
-// No need for manual tx.Rollback() or tx.Release
-// When TransactionPtr out-of-scope
-// automatically checking what need to do.
+
 ```
 
 ### <u>Database supported</u>
