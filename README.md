@@ -77,7 +77,16 @@ int main() {
 - Mysql : Plan
 - Sqlite: Plan
 
-  
+### Features
+
+- Unified API: Simplifies switching between different databases.
+- Transaction Management: Automatic transaction handling with default support for prepared statements.
+- Async Execution: All the query executions are executed async and managed by internal TaskPool.
+- Cluster Connection: Supports connection pooling and fallback mechanisms.
+- Binary Transport Protocol: Uses binary protocols if supported for efficiency.
+- Extensible: Provides access to underlying DB libraries for advanced use cases.
+- High productivity: No more sacrificing quality vs development time
+
 ### Namespace Notes
 When using standalone library from this repo.
 The root name is same with root namespace from NvServ
