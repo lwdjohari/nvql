@@ -101,8 +101,9 @@ High quality, High productivity whatever database you choose.
 ## Query Execution Implementations
 
 NvQL by default decided the query execution approach only took certain methods and declare the approach as the first-class citizen and being implement under-the-hood.
-- All the query execution executed via prepared statement & parameter values.
-- NvQL manages the prepared statement routines & boilerplate, so developer just need to send the SQL query with parameters and that's all.
+- All the query executions are executed via prepared statement & parameter values.
+- All the query exectutions are transaction based.
+- NvQL manages the prepared statement routines & boilerplate, developer just need to send the SQL query with parameters and that's all.
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
 - Transaction Mode (options to choose different mode of transactions)
