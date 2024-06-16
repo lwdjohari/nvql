@@ -26,7 +26,7 @@ int main() {
   // Only clusters, DB server declaration and dialect that are DB Specific
   // For NvQL executions are abstracted through unified API.
    
-  // Connect to standalone Postgress DB Server
+  // Connect to standalone Postgres DB Server
   // Connection pool with 5 connections standby, max 10 connections
   auto clusters = {postgres::PgClusterConfig(
       "db-example", "the-user", "the-password", "localhost", 5433)};
