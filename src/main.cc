@@ -1,16 +1,19 @@
-#include <nvserv/storages/postgres/pg_server.h>
-
 #include <iostream>
 #include <memory>
+
+#include "nvserv/storages/postgres/pg_server.h"
 
 int main() {
   using namespace nvserv::storages;
 
+  // Only clusters, server declarations and dialect that are DB Specific
+  // For NvQL executions are abstracted through unified API.
+   
   // Connect to standalone Postgress DB Server
   // Connection pool with 5 connections standby, max 10 connections
   auto clusters = {postgres::PgClusterConfig(
       "db-example", "the-user", "the-password", "localhost", 5433)};
-  auto server = std::make_shared<postgres::PgServer>(clusters, 5, 10);
+  StorageServerPtr server = std::make_shared<postgres::PgServer>(clusters, 5, 10);
 
   try {
     server->TryConnect();
@@ -22,6 +25,8 @@ int main() {
 
     if (result->Empty()) {
       std::cout << "No customers data.." << std::endl;
+      server->Shutdown();
+      return 0;
     }
 
     for (const auto row : *result) {
