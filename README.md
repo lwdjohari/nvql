@@ -83,8 +83,8 @@ When using standalone library from this repo.
 The root name is same with root namespace from NvServ
 
 NvQL Namespace<br/>
-NvQL was developed as part of NvServ so to retain interoperability between standalone & nvserv, 
-NvQL still keep the namespace of nvserv
+NvQL was developed as part of NvServ so to retain interoperability<br/> 
+between standalone & nvserv, NvQL still keep the namespace of nvserv
 
 ```cpp
   namespace nvserv::storages
@@ -102,7 +102,7 @@ High quality, High productivity whatever database you choose.
 
 NvQL by default decided the query execution approach only took certain methods and declare the approach as the first-class citizen and being implement under-the-hood.
 - All the query executions are executed via prepared statement & parameter values.
-- All the query exectutions are transaction based.
+- All the query executions are transaction based.
 - NvQL manages the prepared statement routines & boilerplate, developer just need to send the SQL query with parameters and that's all.
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
