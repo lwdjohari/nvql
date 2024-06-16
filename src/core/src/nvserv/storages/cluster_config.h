@@ -3,8 +3,9 @@
 #include <nvm/types/type_utility.h>
 
 #include <ostream>
-#include "nvserv/storages/declare.h"
+
 #include "nvserv/global_macro.h"
+#include "nvserv/storages/declare.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
@@ -90,6 +91,11 @@ class ClusterConfig : public ClusterConfigBase {
 
   StorageType Type() const override {
     return type_;
+  }
+
+  virtual std::string GetConfig() const override {
+    throw std::runtime_error(
+        "Implement ClusterConfig::GetConfig on derrived class");
   }
 
  private:

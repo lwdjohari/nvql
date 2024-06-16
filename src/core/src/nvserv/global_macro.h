@@ -1,6 +1,5 @@
-#pragma once
-
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
+#pragma once
 
 #if __cplusplus >= 201703L
 #define __NR_CPP17 1

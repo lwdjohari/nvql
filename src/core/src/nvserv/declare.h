@@ -1,6 +1,5 @@
-#pragma once
-
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
+#pragma once
 
 #include <nvm/macro.h>
 
