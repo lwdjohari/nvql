@@ -1,7 +1,9 @@
 # NvQL
 Unified Data Layer Library for postgres, oracle, mysql &amp; sqlite database for C++ 14 &amp; 17.<br/>
+Consistent API across databases, high productivity, reusable and low overhead.
 
-```NvQL``` is being developed primarily for NvServ, a rapid server framework for modern c++ data layer.<br/>
+```NvQL``` is being developed primarily for hiqh productivity & reusable  efficient approach of c++ unified data layer library for NvServ, a rapid server framework.
+
 Serving for easy to use low overhead unified abstraction data layer
 
 > [!WARNING]
@@ -30,13 +32,12 @@ NvQL still keep the namespace of nvserv
   namespace nvserv::storages
 ```
 
-
 ## Design Concept
 
 Inspired by userver microservice framework,<br/>
 we're decided to take it further into unified data layer.<br/>
 
-In-short, no matter database you use, all the API design are same acrross different DB.<br/>
+In-short, no matter database you use, all the API design are consistent and polymorphed across different DB.<br/>
 High quality, High productivity whatever database you choose.
 
 ```cxx
@@ -74,9 +75,9 @@ if (!result->IsEmpty()) {
 // When TransactionPtr out-of-scope
 // automatically checking what need to do.
 ```
-## Implementations
+## Query Execution Implementations
 
-NvQL by default make this as the first-class citizen and being implement under-the-hood
+NvQL by default decided the query execution approach only took certain methods and declare the approach as the first-class citizen and being implement under-the-hood.
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
 - Transaction Mode (options to choose different mode of transactions)
@@ -99,13 +100,13 @@ nvql from-day-one and by design is not suppose to support implementation
 
 ## Motivation
 During years of handling development that are involved database, <br/>
-we are facing same conceptual and fundamentals but different implementation for different database server.
+we are facing same conceptual and fundamentals but different implementation for different database server.<br/>
 One thing faster in one area and one thing have higher effort on certain area, repeat.
-Thats the reason why NvServ Server Framework & nvql were born.
+Thats the reason why NvServ Server Framework & NvQL were born.
 
 ## Main Engine under-the-hood
 
-Under the hood ```nvql``` utilizes abstracting proven library in industry
+Under the hood ```nvql``` are abstracting proven library in industry
 - postgres: pqxx v7
 - oracle: occi
 - mysql: coming soon
