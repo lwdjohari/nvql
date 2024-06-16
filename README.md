@@ -21,11 +21,8 @@ Serving for easy to use low overhead unified abstraction data layer
 When using standalone library from this repo.
 The root name is same with root namespace from NvServ
 
-The reason is NvQL primarily developed inconjuction<br/>
-as the Unified Data Layer for the NvServ Rapid Server Framework.
-
-NvQL Namespace
-Because NvQL was developed as part of NvServ so to retain interoperability between standalone & nvserv.
+NvQL Namespace<br/>
+NvQL was developed as part of NvServ so to retain interoperability between standalone & nvserv, 
 NvQL still keep the namespace of nvserv
 
 ```cpp
