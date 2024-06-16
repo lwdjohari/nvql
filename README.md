@@ -107,18 +107,18 @@ NvQL by default decided the query execution approach only took certain methods a
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
 - Transaction Mode (options to choose different mode of transactions)
-- Binary Transport Protocol if supported & fallback mechanism
+- Binary Transport Protocol when supported & fallback mechanism
 - Prepared Statement
 - Parameterized parameter (auto sanitazion)
   
-nvql manages the acquire and returning connection and <br/>
+NvQL manages the acquiring, returning connections to the pool, <br/>
 wiring all the necessity of transaction <br/>
-even the prepared statement execution.
+even for the prepared statement execution.
 
-nvql still give developer access to underlying library for each database server.
+NvQL still give developer access to underlying library for each database server.
 This give flexibility for developer  as the last resort and give big relief when we facing edge cases.
 
-nvql from-day-one and by design is not suppose to support implementation
+NvQL from-day-one and by design is not suppose to support implementation
 - transaction-less query
 - sql query string execution (without prepared statement)
 - multi-level/nested transactions
@@ -127,7 +127,7 @@ nvql from-day-one and by design is not suppose to support implementation
 ## Motivation
 During years of handling development that are involved database, <br/>
 we are facing same conceptual and fundamentals but different implementation for different database server.<br/>
-One thing faster in one area and one thing have higher effort on certain area, repeat.
+One implementation faster in one area and other implementation have higher effort on different DB, and it's repetitive.<br/>
 Thats the reason why NvServ Server Framework & NvQL were born.
 
 ## Main Engine under-the-hood
