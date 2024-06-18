@@ -27,7 +27,7 @@ class PgServer;
 using StorageServerPtr = std::shared_ptr<StorageServer>;
 using TransactionPtr = std::shared_ptr<Transaction>;
 using ConnectionPoolPtr = std::shared_ptr<ConnectionPool>;
-using ClusterConfigListType = std::vector<ClusterConfig>;
+using ClusterConfigListType = std::vector<std::shared_ptr<ClusterConfig>>;
 using ExecutionResultPtr = std::shared_ptr<ExecutionResult>;
 using RowResultPtr = std::shared_ptr<RowResult>;
 using PreparedStatementManagerPtr = std::shared_ptr<PreparedStatementManager>;

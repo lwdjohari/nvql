@@ -14,10 +14,12 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 class PgConnection : public Connection {
  public:
   explicit PgConnection(
-      ConnectionStandbyMode standby_mode,
+      const ClusterConfigList& clusters, ConnectionStandbyMode standby_mode,
       std::chrono::seconds mark_idle_after = std::chrono::seconds(300))
                   : Connection(StorageType::Postgres, standby_mode,
                                mark_idle_after),
+                    clusters_(clusters),
+                    connection_string_(BuildConnectionString()),
                     conn_(nullptr),
                     mode_(),
                     hash_key_(CreateHashKey()) {}
@@ -46,11 +48,12 @@ class PgConnection : public Connection {
   /// Different storage server has different implementations
   /// to guarantee the connection is keep-alive
   void PingServerAsync() override {
-    throw std::runtime_error("Unimplemented");
+    std::cout << "Ping Server";
   }
 
   virtual bool PingServer() override {
-    throw std::runtime_error("Unimplemented");
+    std::cout << "Ping Server" << std::endl;
+    return true;
   }
 
   TransactionMode SupportedTransactionMode() const override {
@@ -59,7 +62,7 @@ class PgConnection : public Connection {
   }
 
   void ReportHealth() const override {
-    throw std::runtime_error("Unimplemented");
+    std::cout << "Health Report" << std::endl;
   }
 
   ConnectionMode Mode() const override {
@@ -74,17 +77,21 @@ class PgConnection : public Connection {
     return hash_key_;
   }
 
-  std::optional<std::string> PrepareStatement(__NR_STRING_COMPAT_REF query) override {
+  const std::string& GetConnectionString() const override {
+    return connection_string_;
+  };
+
+  std::optional<std::pair<std::string,bool>> PrepareStatement(
+      __NR_STRING_COMPAT_REF query) override {
     if (!prepared_statement_manager_)
       throw NullReferenceException(
           "Null reference to PrepareStatemenManagerPtr "
           "in prepared_statement_manager_");
 
 #if __NR_CPP17
-    auto query_ref = __NR_HANDLE_STRING_VIEW(query);
-    return prepared_statement_manager_->Register(*query_ref);
+    return prepared_statement_manager_->Register(query.data());
 #else
-    return prepared_statement_manager_->Register(query).value();
+    return prepared_statement_manager_->Register(query);
 #endif
   }
 
@@ -98,9 +105,10 @@ class PgConnection : public Connection {
       throw ConnectionException("Connection already created",
                                 StorageType::Postgres);
     try {
-      conn_ = std::make_unique<pqxx::connection>(
-          "dbname=mydb user=myuser password=mypass hostaddr=127.0.0.1 "
-          "port=5432");
+      std::cout << "Connection string:" << connection_string_ << std::endl;
+
+      conn_ = std::make_unique<pqxx::connection>(connection_string_);
+
     } catch (const pqxx::broken_connection& e) {
       throw ConnectionException(e.what(), StorageType::Postgres);
     } catch (const pqxx::in_doubt_error& e) {
@@ -147,6 +155,8 @@ class PgConnection : public Connection {
   }
 
  private:
+  ClusterConfigList clusters_;
+  std::string connection_string_;
   std::unique_ptr<pqxx::connection> conn_;
   ConnectionMode mode_;
   std::hash<std::string> hash_fn_;
@@ -160,6 +170,40 @@ class PgConnection : public Connection {
     auto hash_str = ss.str();
     std::cout << "Connection Hash Key:" << hash_str << std::endl;
     return hash_fn_(hash_str);
+  }
+
+  std::string BuildConnectionString() {
+    if (clusters_.Configs().size() == 0)
+      return std::string();
+
+    std::ostringstream host;
+    std::string dbname;
+
+    uint16_t index = 0;
+
+    
+    for ( auto cluster : clusters_.Configs()) {
+      
+      std::cout << "Config for: " << ToStringEnumStorageType( cluster->Type()) << std::endl;
+      auto pg_cluster = std::dynamic_pointer_cast<PgClusterConfig>(cluster);
+      if (index == 0) {
+        host << "postgresql://" << std::string(pg_cluster->User()) << ":"
+             << std::string(pg_cluster->Password()) << "@";
+        dbname = std::string(pg_cluster->DbName());
+
+        host << pg_cluster->Host() << ":" << pg_cluster->Port();
+        index++;
+        continue;
+      }
+
+      host << "," << pg_cluster->Host() << ":" << pg_cluster->Port();
+
+      index++;
+    }
+
+    host << "/" << dbname << "?application_name=nvql&connect_timeout=5";
+
+    return __NR_RETURN_MOVE(host.str());
   }
 };
 

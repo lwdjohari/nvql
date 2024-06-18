@@ -154,16 +154,16 @@ public:
 
 protected:
   explicit StorageConfig(StorageType type, TransactionMode transact_mode,
-                         bool pool_support, ConnectionPoolConfig &pool_config,
+                         bool pool_support, ConnectionPoolConfig &&pool_config,
                          TaskPoolMode task_pool_mode,
                          nvm::threads::TaskPoolPtr task_pool,
                          ConnectionMode connection_mode,
-                         ClusterConfigList &cluster_configs)
+                         ClusterConfigList &&cluster_configs)
       : ConfigBase(),
         pool_config_(
-            pool_config),
+            std::forward<ConnectionPoolConfig>(pool_config)),
         task_pool_(task_pool),
-        cluster_configs_(cluster_configs),
+        cluster_configs_(std::forward<ClusterConfigList>(cluster_configs)),
         task_pool_mode_(task_pool_mode),
         connection_mode_(connection_mode),
         type_(type),
@@ -173,9 +173,9 @@ protected:
             task_pool_mode != TaskPoolMode::None ? true : false) {}
 
 private:
-  ConnectionPoolConfig &pool_config_;
+  ConnectionPoolConfig pool_config_;
   nvm::threads::TaskPoolPtr task_pool_;
-  ClusterConfigList &cluster_configs_;
+  ClusterConfigList cluster_configs_;
   TaskPoolMode task_pool_mode_;
   ConnectionMode connection_mode_;
   StorageType type_;

@@ -100,18 +100,23 @@ class PgWorkTransaction final : public PgInnerTransactionBase {
                              const parameters::ParameterArgs& args) override {
     if (args.size() == 0) {
       auto result = txn_.exec_prepared(query_key);
-      return std::make_shared<PgExecutionResult>(result);
+      // for (auto const& row : result) {
+      //   for (auto const& field : row)
+      //     std::cout << field.c_str() << '\t';
+      //   std::cout << '\n';
+      // }
+      return std::make_shared<PgExecutionResult>(std::move(result));
     } else {
       pqxx::params params;
       TranslateParams(params, args);
       auto result = txn_.exec_prepared(query_key, params);
-      return std::make_shared<PgExecutionResult>(result);
+      return std::make_shared<PgExecutionResult>(std::move(result));
     }
   }
-  virtual void Commit() override {
+  void Commit() override {
     txn_.commit();
   }
-  virtual void Rollback() override {
+  void Rollback() override {
     txn_.abort();
   }
 
@@ -157,7 +162,7 @@ class PgTransaction : public Transaction {
 
   void Commit() override {
     try {
-      transact_.Commit();
+      transact_->Commit();
     } catch (const std::exception& e) {
       // Handle commit failure
       throw std::runtime_error(std::string("Commit failed: ") + e.what());
@@ -166,7 +171,7 @@ class PgTransaction : public Transaction {
 
   void Rollback() override {
     try {
-      transact_.Rollback();
+      transact_->Rollback();
     } catch (const std::exception& e) {
       // Handle rollback failure
       throw std::runtime_error(std::string("Rollback failed: ") + e.what());
@@ -175,7 +180,8 @@ class PgTransaction : public Transaction {
 
  protected:
   // ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
-  //                                const std::vector<std::any>& args) override {
+  //                                const std::vector<std::any>& args) override
+  //                                {
   //   // conn_->prepare("qname", std::string(query.data()));
   //   //  auto stmnt = txn_.prepared("qname");
 
@@ -186,30 +192,33 @@ class PgTransaction : public Transaction {
       const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) override {
     auto key = connection_->PrepareStatement(query);
-
     if (!key.has_value())
       throw TransactionException("Exceptions on empty sql query on Execute",
                                  StorageType::Postgres);
-    return __NR_RETURN_MOVE(transact_.Execute(key.value(), args));
+
+    if (key.value().second)
+      connection_->Driver()->prepare(key.value().first, query.data());
+
+    return __NR_RETURN_MOVE(transact_->Execute(key.value().first, args));
   }
 
  private:
   PgServer* server_;
   std::shared_ptr<PgConnection> connection_;
-  impl::PgInnerTransactionBase transact_;
+  std::shared_ptr<impl::PgInnerTransactionBase> transact_;
 
   std::shared_ptr<PgConnection> GetConnectionFromPool();
   void ReturnConnectionToThePool();
 
-  impl::PgInnerTransactionBase CreateTransaction() {
+  std::shared_ptr<impl::PgInnerTransactionBase> CreateTransaction() {
     switch (mode_) {
       case TransactionMode::ReadWrite:
-        return impl::PgWorkTransaction(connection_->Driver());
+        return std::make_shared<impl::PgWorkTransaction>(connection_->Driver());
       case TransactionMode::ReadOnly:
       case TransactionMode::ReadCommitted:
-        return impl::PgWorkTransaction(connection_->Driver());
+        return std::make_shared<impl::PgWorkTransaction>(connection_->Driver());
       default:
-        throw storages::UnsupportedFeatureException(
+        throw storages::TransactionException(
             "Postgres unsupported Transaction Mode: " +
                 ToStringEnumTransactionMode(mode_),
             StorageType::Postgres);

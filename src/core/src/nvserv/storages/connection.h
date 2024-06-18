@@ -63,7 +63,9 @@ class ConnectionBase {
 
   virtual StorageType Type() const = 0;
 
-  virtual std::optional<std::string> PrepareStatement(
+  virtual const std::string& GetConnectionString() const =0;
+
+  virtual std::optional<std::pair<std::string,bool>> PrepareStatement(
       __NR_STRING_COMPAT_REF query) = 0;
   virtual PreparedStatementManagerPtr PreparedStatement() = 0;
 

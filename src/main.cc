@@ -1,16 +1,15 @@
 #include <iostream>
 #include <memory>
 
+#include "nvm/stopwatch.h"
 #include "nvserv/storages/postgres/pg_server.h"
 
 int main() {
   using namespace nvserv::storages;
   using namespace nvserv::storages::parameters;
 
-  ParameterArgs params = {
-    Param::SmallInt(16), 
-    Param::String("Hey world"),
-    Param::Timestampz(nvserv::NvDateTime::UtcNow())};
+  ParameterArgs params = {Param::SmallInt(16), Param::String("Hey world"),
+                          Param::Timestampz(nvserv::NvDateTime::UtcNow())};
 
   for (const auto& param : params) {
     switch (param.Type()) {
@@ -59,53 +58,74 @@ int main() {
     }
   }
 
- auto utc = Param::Timestampz(nvserv::NvDateTime::UtcNow());
-  std::cout << "Param Size: " << sizeof(utc) << std::endl; 
+  auto utc = Param::Timestampz(nvserv::NvDateTime::UtcNow());
+  std::cout << "Param Size: " << sizeof(utc) << std::endl;
 
   // Only clusters, server declarations and dialect that are DB Specific
   // For NvQL executions are abstracted through unified API.
 
+  // 'postgresql://mnvx:mnvx@172.21.240.1:5433/minechain'
+
   // Connect to standalone Postgress DB Server
   // Connection pool with 5 connections standby, max 10 connections
-  // auto clusters = {postgres::PgClusterConfig(
-  //     "db-example", "the-user", "the-password", "localhost", 5433)};
-  // StorageServerPtr server =
-  //     std::make_shared<postgres::PgServer>(clusters, 5, 10);
+  auto clusters = {postgres::PgClusterConfig("minechain", "mnvx", "mnvx",
+                                             "172.21.240.1", 5433)};
+  StorageServerPtr server =
+      std::make_shared<postgres::PgServer>(clusters, 1, 1);
 
-  // try {
-  //   server->TryConnect();
-  //   auto tx = server->Begin();
+  try {
+    nvm::Stopwatch sw;
 
-  //   int32_t customer_status = 1;
+    server->TryConnect();
+    std::cout << "Connect time: " << sw.ElapsedMilliseconds() << "ms"
+              << std::endl;
+    sw.Reset();
 
-  //   auto result = tx->Execute(
-  //       "select * from customer where status = $1", customer_status);
+    std::cout << "Create Transact" << std::endl;
+    auto tx = server->Begin();
 
-  //   if (result->Empty()) {
-  //     std::cout << "No customers data.." << std::endl;
-  //     server->Shutdown();
-  //     return 0;
-  //   }
+    std::cout << "Transaction Creation: " << sw.ElapsedMilliseconds() << "ms"
+              << std::endl;
+    sw.Reset();
 
-  //   for (const auto row : *result) {
-  //     auto cust_id = row->As<int32_t>("cust_id");
-  //     auto name = row->As<std::string>("name");
-  //     auto member_type = row->As<std::string>("member_type");
-  //     auto phone_number = row->As<std::string>("phone_number");
-  //     auto status = row->As<int32_t>("status");
-  //     auto dob = row->AsDateTimeOffset<nvm::dates::DateTime>("dob");
+    int32_t customer_status = 1;
+    nvm::Stopwatch swt;
+    for (size_t i = 0; i < 10; i++) {
+      ExecutionResultPtr result =
+          tx->Execute("select * from users u inner join company c on "
+                      "u.company_id = c.company_id");
+      auto cursor = Cursor(*result);
 
-  //     std::cout << "[" << cust_id << "] " << name << " (" << member_type <<
-  //     ":"
-  //               << phone_number << ", " << dob << ", " << status << ")"
-  //               << std::endl;
-  //   }
+      std::cout << "Query Trip time: " << swt.ElapsedMilliseconds() << "ms"
+                << std::endl;
+      swt.Reset();
 
-  //   server->Shutdown();
+      if (result->Empty()) {
+        std::cout << "No customers data.." << std::endl;
+        server->Shutdown();
+        return 0;
+      }
 
-  // } catch (const StorageException& e) {
-  //   std::cerr << e.what() << '\n';
-  // }
+      // auto row =  result->At(0);
+
+      // std::cout << "Row size: " << row->Size() << std::endl;
+      for (const auto row : cursor) {
+        auto cust_id = row->As<int32_t>("user_id");
+        auto name = row->As<std::string>("username");
+        auto status = row->As<int16_t>("status");
+
+        std::cout << "[" << cust_id << "] " << name << " (" << status << ")"
+                  << std::endl;
+      }
+    }
+
+    std::cout << "Query Execution Total time: " << sw.ElapsedMilliseconds()
+              << "ms" << std::endl;
+    server->Shutdown();
+
+  } catch (const StorageException& e) {
+    std::cerr << e.what() << '\n';
+  }
 
   return 0;
 }

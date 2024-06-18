@@ -56,7 +56,7 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   PreparedStatementManager(){};
   ~PreparedStatementManager(){};
 
-  std::optional<std::string> Register(
+  std::optional<std::pair<std::string,bool>> Register(
                                  const std::string& query) {
     if (query.empty())
       return std::nullopt;
@@ -67,13 +67,13 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
     auto key = hash_fn_(query);
     auto key_str = GenerateKey(key);
     if (IsKeyExist(key_str))
-      return __NR_RETURN_MOVE(key_str);
+      return __NR_RETURN_MOVE(std::make_pair(key_str,false));
 
     statements_.emplace(
         key_str, std::move(PreparedStatementItem(
                  key_str, std::string(std::to_string(key)), std::string(query),
                  nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-    return key_str;
+    return __NR_RETURN_MOVE(std::make_pair(key_str,true));
   }
 
   // std::optional<size_t> Register(const std::string& name,
@@ -96,7 +96,6 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   //   return key;
   // }
 
-  
 
   bool IsKeyExist(const std::string& statement_key) const {
     return statements_.contains(statement_key);

@@ -21,26 +21,28 @@ class PgRowResultIterator : public RowResultIterator {
   using reference = const RowResultPtr&;
 
   explicit PgRowResultIterator(const pqxx::result& result, size_t index)
-                  : RowResultIterator(), result_(result), index_(index) {}
+      : result_(result), index_(index) {}
 
-  virtual ~PgRowResultIterator() = default;
-
-  RowResultIterator& operator++() override {
+  PgRowResultIterator& operator++() override {
     ++index_;
     return *this;
+  }
+
+  bool operator==(const RowResultIterator& other) const override {
+    auto other_pg = dynamic_cast<const PgRowResultIterator*>(&other);
+    return other_pg && &result_ == &(other_pg->result_) && index_ == other_pg->index_;
   }
 
   bool operator!=(const RowResultIterator& other) const override {
     return !(*this == other);
   }
-  bool operator==(const RowResultIterator& other) const override {
-    auto other_pg = dynamic_cast<const PgRowResultIterator*>(&other);
-    return other_pg && &result_ == &(other_pg->result_) &&
-           index_ == other_pg->index_;
-  }
 
   RowResultPtr operator*() const override {
-    return std::make_shared<PgRowResult>(result_.at(index_));
+    return std::make_shared<PgRowResult>(std::make_shared<pqxx::row>(result_.at(index_)));
+  }
+
+  std::unique_ptr<RowResultIterator> clone() const override {
+    return std::make_unique<PgRowResultIterator>(*this);
   }
 
  private:

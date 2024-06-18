@@ -16,26 +16,26 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgRowResult : public RowResult {
  public:
-  explicit PgRowResult(const pqxx::row& row) : RowResult(), row_(row) {}
+  explicit PgRowResult(std::shared_ptr<pqxx::row> row) : RowResult(), row_(row) {}
   virtual ~PgRowResult() = default;
   std::optional<Column> GetColumn(
       const std::string& columnName) const override {
     try {
-      return PgColumn(row_[columnName]);
+      return PgColumn((*row_)[columnName]);
     } catch (const std::exception& e) {
       return std::nullopt;
     }
   }
 
   std::optional<Column> GetColumn(const size_t& index) const override {
-    if (index >= row_.size()) {
+    if (index >= row_->size()) {
       return std::nullopt;
     }
-    return PgColumn(row_.at(index));
+    return PgColumn(row_->at(index));
   }
 
   size_t Size() const override{
-    return row_.size();
+    return row_->size();
   }
 
   // ColumnIterator begin() const {
@@ -48,7 +48,7 @@ class PgRowResult : public RowResult {
 
   int16_t AsImpl_int16_t(const size_t& index) const override {
     try {
-      return row_.at(index).as<int16_t>();
+      return row_->at(index).as<int16_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -57,7 +57,7 @@ class PgRowResult : public RowResult {
 
   int32_t AsImpl_int32_t(const size_t& index) const override {
     try {
-      return row_.at(index).as<int32_t>();
+      return row_->at(index).as<int32_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -66,7 +66,7 @@ class PgRowResult : public RowResult {
 
   int64_t AsImpl_int64_t(const size_t& index) const override {
     try {
-      return row_.at(index).as<int64_t>();
+      return row_->at(index).as<int64_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -75,7 +75,7 @@ class PgRowResult : public RowResult {
 
   std::string AsImpl_string(const size_t& index) const override {
     try {
-      return row_.at(index).as<std::string>();
+      return row_->at(index).as<std::string>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -84,7 +84,7 @@ class PgRowResult : public RowResult {
 
   float AsImpl_float(const size_t& index) const override {
     try {
-      return row_.at(index).as<float>();
+      return row_->at(index).as<float>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -93,7 +93,7 @@ class PgRowResult : public RowResult {
 
   double AsImpl_double(const size_t& index) const override {
     try {
-      return row_.at(index).as<double>();
+      return row_->at(index).as<double>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -104,7 +104,7 @@ class PgRowResult : public RowResult {
       const size_t& index) const override {
     try {
       auto time_point =
-          helper::ParseTimestampz(row_.at(index).as<std::string>());
+          helper::ParseTimestampz(row_->at(index).as<std::string>());
       return nvm::dates::DateTime(time_point, "Etc/Utc");
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
@@ -116,7 +116,7 @@ class PgRowResult : public RowResult {
       const size_t& index) const override {
     try {
       auto time_point =
-          helper::ParseTimestamp(row_.at(index).as<std::string>());
+          helper::ParseTimestamp(row_->at(index).as<std::string>());
       return nvm::dates::DateTime(time_point, "Etc/Utc");
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
@@ -126,7 +126,7 @@ class PgRowResult : public RowResult {
 
   int16_t AsImpl_int16_t(const std::string& column_name) const override {
     try {
-      return row_.at(column_name).as<int16_t>();
+      return row_->at(column_name).as<int16_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -135,7 +135,7 @@ class PgRowResult : public RowResult {
 
   int32_t AsImpl_int32_t(const std::string& column_name) const override {
     try {
-      return row_.at(column_name).as<int32_t>();
+      return row_->at(column_name).as<int32_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -144,7 +144,7 @@ class PgRowResult : public RowResult {
 
   int64_t AsImpl_int64_t(const std::string& column_name) const override {
     try {
-      return row_.at(column_name).as<int64_t>();
+      return row_->at(column_name).as<int64_t>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -153,7 +153,7 @@ class PgRowResult : public RowResult {
 
   std::string AsImpl_string(const std::string& column_name) const override {
     try {
-      return __NR_RETURN_MOVE(row_.at(column_name).as<std::string>());
+      return __NR_RETURN_MOVE(row_->at(column_name).as<std::string>());
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -162,7 +162,7 @@ class PgRowResult : public RowResult {
 
   float AsImpl_float(const std::string& column_name) const override {
     try {
-      return row_.at(column_name).as<float>();
+      return row_->at(column_name).as<float>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -171,7 +171,7 @@ class PgRowResult : public RowResult {
 
   double AsImpl_double(const std::string& column_name) const override {
     try {
-      return row_.at(column_name).as<double>();
+      return row_->at(column_name).as<double>();
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
       throw std::invalid_argument(e.what());
@@ -182,7 +182,7 @@ class PgRowResult : public RowResult {
       const std::string& column_name) const override {
     try {
       auto time_point =
-          helper::ParseTimestampz(row_.at(column_name).as<std::string>());
+          helper::ParseTimestampz(row_->at(column_name).as<std::string>());
       return __NR_RETURN_MOVE(nvm::dates::DateTime(time_point, "Etc/Utc"));
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
@@ -194,7 +194,7 @@ class PgRowResult : public RowResult {
       const std::string& column_name) const override {
     try {
       auto time_point =
-          helper::ParseTimestamp(row_.at(column_name).as<std::string>());
+          helper::ParseTimestamp(row_->at(column_name).as<std::string>());
       return __NR_RETURN_MOVE(nvm::dates::DateTime(time_point, "Etc/Utc"));
     } catch (const std::exception& e) {
       // std::cerr << e.what() << '\n';
@@ -203,7 +203,7 @@ class PgRowResult : public RowResult {
   };
 
  private:
-  const pqxx::row& row_;
+  std::shared_ptr<pqxx::row> row_;
 };
 
 NVSERV_END_NAMESPACE

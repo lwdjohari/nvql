@@ -39,12 +39,14 @@ class PgServer final : public StorageServer {
   ~PgServer() {}
 
   bool TryConnect() override {
-    return false;
+     pools_->Run();
+     return true;
   }
 
   bool Shutdown(
       bool grace_shutdown = true,
       std::chrono::seconds deadline = std::chrono::seconds(0)) override {
+        pools_->Stop();
     return false;
   }
 
@@ -106,7 +108,11 @@ class PgServer final : public StorageServer {
   }
 
   static ConnectionPtr CreatePrimaryPgConnection(StorageConfig* config) {
+    if(!config)
+      throw Exception("Config is null");
+
     auto conn = std::make_shared<PgConnection>(
+        config->ClusterConfigs(),
         ConnectionStandbyMode::Primary,
         config->PoolConfig().ConnectionIdleWait());
 
@@ -115,6 +121,7 @@ class PgServer final : public StorageServer {
 
   static ConnectionPtr CreateStandbyPgConnection(StorageConfig* config) {
     auto conn = std::make_shared<PgConnection>(
+        config->ClusterConfigs(),
         ConnectionStandbyMode::Standby,
         config->PoolConfig().ConnectionIdleWait());
 
@@ -135,8 +142,8 @@ std::shared_ptr<PgConnection> PgTransaction::GetConnectionFromPool() {
     throw storages::TransactionException(
         "Transaction Begin failed, can't acquired connection from pool",
         StorageType::Postgres);
-
-  return __NR_RETURN_MOVE(std::static_pointer_cast<PgConnection>(conn));
+  auto res = std::static_pointer_cast<PgConnection>(conn);
+  return __NR_RETURN_MOVE(res);
 }
 
 void PgTransaction::ReturnConnectionToThePool() {

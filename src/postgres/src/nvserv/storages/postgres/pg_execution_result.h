@@ -11,9 +11,9 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgExecutionResult : public ExecutionResult {
  public:
-  explicit PgExecutionResult(pqxx::result result)
-                  : ExecutionResult(StorageType::Postgres),
-                    result_(std::move(result)) {}
+  explicit PgExecutionResult(pqxx::result&& result)
+      : ExecutionResult(StorageType::Postgres),
+        result_(std::forward<pqxx::result>(result)) {}
 
   bool Empty() const override {
     return result_.empty();
@@ -27,15 +27,15 @@ class PgExecutionResult : public ExecutionResult {
     if (offset >= result_.size()) {
       throw std::out_of_range("Offset out of range");
     }
-    return std::make_shared<PgRowResult>(result_[offset]);
+    return std::make_shared<PgRowResult>(std::make_shared<pqxx::row>(result_.at(offset)));
   }
 
-  RowResultIterator begin() const override {
-    return PgRowResultIterator(result_, 0);
+  std::unique_ptr<RowResultIterator> begin() const override {
+    return std::make_unique<PgRowResultIterator>(result_, 0);
   }
 
-  RowResultIterator end() const override {
-    return PgRowResultIterator(result_, result_.size());
+  std::unique_ptr<RowResultIterator> end() const override {
+    return std::make_unique<PgRowResultIterator>(result_, result_.size());
   }
 
  private:

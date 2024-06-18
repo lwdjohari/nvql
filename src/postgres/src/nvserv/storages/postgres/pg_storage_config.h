@@ -15,21 +15,15 @@ class PgStorageConfig : public StorageConfig {
  public:
   explicit PgStorageConfig(ClusterConfigList&& cluster_config,
                            ConnectionPoolConfig&& pool_config)
-                  : cluster_config_(
-                        std::forward<ClusterConfigList>(cluster_config)),
-                    pool_config_(
-                        std::forward<ConnectionPoolConfig>(pool_config)),
+                  : 
                     StorageConfig(StorageType::Postgres,
                                   TransactionMode::ReadCommitted |
                                       TransactionMode::ReadOnly |
                                       TransactionMode::ReadWrite,
-                                  true, pool_config_, TaskPoolMode::Internal,
+                                  true, std::forward<ConnectionPoolConfig>(pool_config), TaskPoolMode::Internal,
                                   nullptr, ConnectionMode::ServerCluster,
-                                  cluster_config) {}
+                                  std::forward<ClusterConfigList>(cluster_config)) {}
 
- private:
-  ClusterConfigList cluster_config_;
-  ConnectionPoolConfig pool_config_;
 };
 
 NVSERV_END_NAMESPACE

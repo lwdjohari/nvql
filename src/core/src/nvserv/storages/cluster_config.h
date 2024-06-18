@@ -21,7 +21,7 @@ class ClusterConfigBase {
 
 class ClusterConfigList {
  public:
-  explicit ClusterConfigList(StorageType type) : configs_(), type_() {}
+  explicit ClusterConfigList(StorageType type) : configs_(), type_(type) {}
 
   template <typename T>
   void Add(T&& config) {
@@ -35,14 +35,14 @@ class ClusterConfigList {
           "ClusterConfigList is set to only accept StorageType = " +
           ToStringEnumStorageType(type_));
 
-    configs_.push_back(std::forward<T>(config));
+    configs_.push_back(std::make_shared<T>(std::forward<T>(config)));
   };
 
-  const ClusterConfigListType& Configs() const {
+  const ClusterConfigListType & Configs() const {
     return configs_;
   }
 
-  ClusterConfigListType& Configs() {
+  ClusterConfigListType & Configs() {
     return configs_;
   }
 

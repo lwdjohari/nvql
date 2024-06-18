@@ -9,7 +9,7 @@
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
-class PgClusterConfig final : public storages::ClusterConfig {
+class PgClusterConfig  : public storages::ClusterConfig {
  private:
   //   std::vector<std::string> cluster_conninfo = {
   //       "dbname=test user=postgres password=secret hostaddr=192.168.1.1 "

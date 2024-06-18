@@ -128,7 +128,7 @@ using ParameterArgs = std::vector<Param>;
 
 class Transaction {
  public:
-  Transaction(StorageType type, TransactionMode mode){};
+  Transaction(StorageType type, TransactionMode mode):type_(type),mode_(mode) {};
   virtual ~Transaction(){};
 
   /// @brief Execute SQL statement using NvQL. Behind-scenes NvQL data layer

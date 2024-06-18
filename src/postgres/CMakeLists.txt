@@ -21,7 +21,6 @@ add_library(${PROJECT_NAME}_postgres STATIC ${SOURCES_NVSERV_PG} )
 target_link_libraries(${PROJECT_NAME}_postgres  
     PUBLIC
         ${PROJECT_NAME}::core 
-    PRIVATE
         pqxx
     )
 
@@ -31,7 +30,6 @@ target_compile_definitions(${PROJECT_NAME}_postgres PUBLIC ${NVQL_FEATURE_DEFINI
 target_include_directories(${PROJECT_NAME}_postgres
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src/
-    PRIVATE
         ${PQXX_INCLUDE_DIRS}
 )
 
