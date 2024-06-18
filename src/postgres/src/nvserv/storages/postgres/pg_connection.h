@@ -74,26 +74,17 @@ class PgConnection : public Connection {
     return hash_key_;
   }
 
-  size_t PrepareStatement(__NR_STRING_COMPAT_REF query) override {
+  std::optional<std::string> PrepareStatement(__NR_STRING_COMPAT_REF query) override {
     if (!prepared_statement_manager_)
       throw NullReferenceException(
           "Null reference to PrepareStatemenManagerPtr "
           "in prepared_statement_manager_");
-#if __NR_CPP17
-    auto query_ref = reinterpret_cast<const std::string*>(query.data());
-    auto key = hash_fn_(*query_ref);
-#else
-    auto key = hash_fn_(query);
-#endif
-
-    auto exist = prepared_statement_manager_->IsExist(key);
-    if (exist)
-      return key;
 
 #if __NR_CPP17
-    return prepared_statement_manager_->Register(*query_ref).value();
+    auto query_ref = __NR_HANDLE_STRING_VIEW(query);
+    return prepared_statement_manager_->Register(*query_ref);
 #else
-    return prepared_statement_manager_->Register(query);
+    return prepared_statement_manager_->Register(query).value();
 #endif
   }
 

@@ -5,6 +5,7 @@
 #include <ostream>
 #include <tuple>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "nvserv/global_macro.h"
@@ -14,19 +15,116 @@
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
-// // Helper function to call a function with a tuple of arguments
-// template <typename Func, typename Tuple, std::size_t... I>
-// decltype(auto) FnCallTuplesArgs(Func&& func, Tuple&& t,
-//                                 std::index_sequence<I...>) {
-//   return func(std::get<I>(std::forward<Tuple>(t))...);
-// }
+namespace parameters {
 
-// template <typename Func, typename Tuple>
-// decltype(auto) FnCallTuplesArgs(Func&& func, Tuple&& t) {
-//   constexpr auto size = std::tuple_size<std::decay_t<Tuple>>::value;
-//   return FnCallTuplesArgs(std::forward<Func>(func), std::forward<Tuple>(t),
-//                           std::make_index_sequence<size>{});
-// }
+using NvQLVType = std::variant<
+    std::reference_wrapper<const int16_t>,      // Small Int
+    std::reference_wrapper<const int32_t>,      // Integer type
+    std::reference_wrapper<const int64_t>,      // Bigint
+    std::reference_wrapper<const double>,       // Floating-point type
+    std::reference_wrapper<const float>,        // Real (float) type
+    std::reference_wrapper<const std::string>,  // String type, including JSON
+                                                // and JSONB
+    std::reference_wrapper<const bool>,         // Boolean type
+    std::reference_wrapper<
+        const std::chrono::system_clock::time_point>,  // Timestamp type
+    std::reference_wrapper<const NvDateTime>,          // Timestamp offset
+    std::reference_wrapper<const std::vector<unsigned char>>,    // Binary data
+                                                                 // type
+    std::reference_wrapper<const std::array<unsigned char, 16>>  // UUID type
+    >;
+
+enum class DataType {
+  SmallInt,
+  Int,
+  BigInt,
+  Real,
+  Double,
+  String,
+  Boolean,
+  Date,
+  Time,
+  Timestamp,
+  Timestampz
+};
+
+class Param {
+ public:
+  explicit Param(const int16_t& value)
+                  : data_(std::cref(value)), type_(DataType::SmallInt) {}
+  explicit Param(const int32_t& value)
+                  : data_(std::cref(value)), type_(DataType::Int) {}
+  explicit Param(const int64_t& value)
+                  : data_(std::cref(value)), type_(DataType::BigInt) {}
+  explicit Param(const double& value)
+                  : data_(std::cref(value)), type_(DataType::Double) {}
+  explicit Param(const float& value)
+                  : data_(std::cref(value)), type_(DataType::Real) {}
+  explicit Param(const std::string& value)
+                  : data_(std::cref(value)), type_(DataType::String) {}
+  explicit Param(const bool& value)
+                  : data_(std::cref(value)), type_(DataType::Boolean) {}
+
+  explicit Param(const std::chrono::system_clock::time_point& value)
+                  : data_(std::cref(value)), type_(DataType::Timestamp) {}
+  explicit Param(const NvDateTime& value)
+                  : data_(std::cref(value)), type_(DataType::Timestampz) {}
+
+  static Param SmallInt(const int16_t& value) {
+    return Param(value);
+  }
+  static Param Int(const int32_t& value) {
+    return Param(value);
+  }
+  static Param BigInt(const int64_t& value) {
+    return Param(value);
+  }
+  static Param Double(const double& value) {
+    return Param(value);
+  }
+  static Param Real(const float& value) {
+    return Param(value);
+  }
+  static Param String(const std::string& value) {
+    return Param(value);
+  }
+  static Param Bool(const bool& value) {
+    return Param(value);
+  }
+
+  static Param Timestamp(const std::chrono::system_clock::time_point& value) {
+    return Param(value);
+  }
+  static Param Timestampz(const NvDateTime& value) {
+    return Param(value);
+  }
+
+  // explicit Param(const char* value)
+  //                 : data_(std::cref(std::string(value))),
+  //                   type_(DataType::String) {}
+
+  // explicit Param(const std::vector<unsigned char>& value)
+  //                 : data_(std::cref(value)), type_(DataType::Date) {}
+  // explicit Param(const std::array<unsigned char, 16>& value)
+  //                 : data_(std::cref(value)), type_(DataType::Date) {}
+
+  DataType Type() const {
+    return type_;
+  }
+
+  template <typename T>
+  const T& As() const {
+    return std::get<std::reference_wrapper<const T>>(data_).get();
+  }
+
+ private:
+  NvQLVType data_;
+  DataType type_;
+};
+
+using ParameterArgs = std::vector<Param>;
+
+}  // namespace parameters
 
 class Transaction {
  public:
@@ -41,41 +139,44 @@ class Transaction {
   /// @param query
   /// @param ...args
   /// @return
-  template <typename... Args>
-  [[nodiscard]] ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
-                                           const Args&... args) {
-    std::vector<std::any> anyArgs = {args...};
-    return ExecuteImpl(query, anyArgs);
+  // template <typename... Args>
+  // [[nodiscard]] ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
+  //                                          const Args&... args) {
+  //   std::vector<std::any> anyArgs = {args...};
+  //   return ExecuteImpl(query, anyArgs);
+  // }
+
+  [[nodiscard]] ExecutionResultPtr Execute(
+      const __NR_STRING_COMPAT_REF query) {
+    return ExecuteImpl(query, parameters::ParameterArgs());
   }
 
-  template <typename TParameterType>
   [[nodiscard]] ExecutionResultPtr Execute(
       const __NR_STRING_COMPAT_REF query,
-      const std::vector<TParameterType>& args) {
-    
-    return ExecuteImpl(query, &args);
+      const parameters::ParameterArgs& args) {
+    return ExecuteImpl(query, args);
   }
 
-  const StorageType& Type() const{
+  const StorageType& Type() const {
     return type_;
   }
 
-  const TransactionMode& Mode() const{
+  const TransactionMode& Mode() const {
     return mode_;
   }
-  
+
   virtual void Commit() = 0;
   virtual void Rollback() = 0;
-
 
  protected:
   StorageType type_;
   TransactionMode mode_;
   // Non-template virtual function
-  virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
-                                         const std::vector<std::any>& args) = 0;
+  // virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
+  //                                        const std::vector<std::any>& args) = 0;
 
-  virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query, void* args) = 0;
+  virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
+                                        const parameters::ParameterArgs& args) = 0;
 };
 
 NVSERV_END_NAMESPACE

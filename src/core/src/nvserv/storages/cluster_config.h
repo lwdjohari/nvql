@@ -63,16 +63,6 @@ class ClusterConfig : public ClusterConfigBase {
  public:
   virtual ~ClusterConfig() {}
 
- protected:
-  explicit ClusterConfig(StorageType type, const std::string& user,
-                         const std::string& password, const std::string& host,
-                         const uint32_t port)
-                  : user_(std::string(user)),
-                    password_(std::string(password)),
-                    host_(host),
-                    port_(port),
-                    type_(type) {}
-
   const std::string& User() const override {
     return user_;
   }
@@ -97,6 +87,16 @@ class ClusterConfig : public ClusterConfigBase {
     throw std::runtime_error(
         "Implement ClusterConfig::GetConfig on derrived class");
   }
+
+ protected:
+  explicit ClusterConfig(StorageType type, const std::string& user,
+                         const std::string& password, const std::string& host,
+                         const uint32_t port)
+                  : user_(std::string(user)),
+                    password_(std::string(password)),
+                    host_(host),
+                    port_(port),
+                    type_(type) {}
 
  private:
   std::string user_;

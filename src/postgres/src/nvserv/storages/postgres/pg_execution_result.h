@@ -10,6 +10,7 @@
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgExecutionResult : public ExecutionResult {
+ public:
   explicit PgExecutionResult(pqxx::result result)
                   : ExecutionResult(StorageType::Postgres),
                     result_(std::move(result)) {}

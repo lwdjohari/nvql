@@ -1,6 +1,8 @@
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
 #pragma once
 
+
+
 #if __cplusplus >= 201703L
 #define __NR_CPP17 1
 #else
@@ -35,9 +37,25 @@
 #define __NR_CONSTEXPR
 #endif
 
+
+#if __NR_CPP17
+#define __NR_HANDLE_STRING_VIEW(view_name) \
+reinterpret_cast<const std::string*>(view_name.data())
+#else
+#define __NR_HANDLE_STRING_VIEW(var_name,view_name) \
+view_name
+#endif
+
 #define NVSERV_NAMESPACE namespace nvserv
 #define NVSERV_BEGIN_ROOT_NAMESPACE NVSERV_NAMESPACE {
 #define NVSERV_BEGIN_NAMESPACE(arg) NVSERV_NAMESPACE::arg {
 #define NVSERV_END_NAMESPACE }
 
+#include "nvm/dates/datetime.h"
+
+NVSERV_BEGIN_ROOT_NAMESPACE
+
+using NvDateTime = nvm::dates::DateTime;
+
+NVSERV_END_NAMESPACE
 #endif

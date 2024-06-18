@@ -208,6 +208,7 @@ class ConnectionPoolImpl {
 class ConnectionPool {
  private:
  public:
+  explicit ConnectionPool(StorageConfig& config) : config_(config){};
   virtual ~ConnectionPool() {
     Stop();
   }
@@ -242,7 +243,7 @@ class ConnectionPool {
     pool_impl_->Stop();
   }
 
-  ConnectionPtr Acquire(){
+  ConnectionPtr Acquire() {
     if (!pool_impl_ || !pool_impl_->IsRun())
       return nullptr;
     return pool_impl_->Acquire();
@@ -254,9 +255,23 @@ class ConnectionPool {
     return pool_impl_->Return(conn);
   }
 
- protected:
-  explicit ConnectionPool(StorageConfig& config) : config_(config){};
+  void SetPrimaryConnectionCallback(ConnectionCreatePrimaryCallback callback) {
+    create_primary_connection_callback_ = callback;
+  }
 
+  void RemovePrimaryConnectionCallback() {
+    create_primary_connection_callback_ = nullptr;
+  }
+
+  void SetStandbyConnectionCallback(ConnectionCreateStandbyCallback callback) {
+    create_secondary_connection_callback_ = callback;
+  }
+
+  void RemoveStandbyConnectionCallback() {
+    create_secondary_connection_callback_ = nullptr;
+  }
+
+ protected:
   ConnectionCreatePrimaryCallback create_primary_connection_callback_;
   ConnectionCreateStandbyCallback create_secondary_connection_callback_;
   std::unique_ptr<impl::ConnectionPoolImpl> pool_impl_;

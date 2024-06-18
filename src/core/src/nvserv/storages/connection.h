@@ -61,9 +61,9 @@ class ConnectionBase {
 
   virtual size_t GetHash() const = 0;
 
-  virtual StorageType Type() = 0;
+  virtual StorageType Type() const = 0;
 
-  virtual size_t PrepareStatement(
+  virtual std::optional<std::string> PrepareStatement(
       __NR_STRING_COMPAT_REF query) = 0;
   virtual PreparedStatementManagerPtr PreparedStatement() = 0;
 
@@ -73,6 +73,9 @@ class ConnectionBase {
 
 class Connection : public ConnectionBase {
  public:
+  StorageType Type() const override {
+    return type_;
+  }
   ///< Write state when when connection being acquired to pool
   void Acquire() override {
     absl::MutexLock lock(&mutex_);
@@ -157,8 +160,6 @@ class Connection : public ConnectionBase {
   virtual void OpenImpl() = 0;
   virtual void CloseImpl() = 0;
   virtual void ReleaseImpl() = 0;
-
-
 };
 
 NVSERV_END_NAMESPACE

@@ -1,12 +1,15 @@
 #pragma once
 
 #include "nvserv/storages/config.h"
+#include "nvserv/storages/connection_pool.h"
 #include "nvserv/storages/postgres/declare.h"
 #include "nvserv/storages/postgres/pg_cluster_config.h"
 #include "nvserv/storages/postgres/pg_connection.h"
 #include "nvserv/storages/postgres/pg_storage_config.h"
 #include "nvserv/storages/postgres/pg_transaction.h"
 #include "nvserv/storages/storage_server.h"
+#include "nvserv/storages/transaction.h"
+
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgServer final : public StorageServer {
@@ -26,10 +29,11 @@ class PgServer final : public StorageServer {
                     u_int16_t pool_max_worker = 10)
                   : StorageServer(),
                     configs_(CreateConfig(clusters, pool_min_worker,
-                                          pool_max_worker)) {}
+                                          pool_max_worker)),
+                    pools_(CreatePools()) {}
 
-  explicit PgServer(const PgStorageConfig& config)
-                  : StorageServer(), configs_(config) {}
+  // explicit PgServer(const PgStorageConfig& config)
+  //                 : StorageServer(), configs_(config) {}
 #endif
 
   ~PgServer() {}
@@ -58,11 +62,11 @@ class PgServer final : public StorageServer {
   }
 
   const ConnectionPoolPtr Pool() const override {
-    return nullptr;
+    return pools_;
   }
 
   ConnectionPoolPtr Pool() override {
-    return nullptr;
+    return pools_;
   }
 
   StorageInfo GetStorageServerInfo() const override {
@@ -71,11 +75,50 @@ class PgServer final : public StorageServer {
 
  private:
   PgStorageConfig configs_;
+  ConnectionPoolPtr pools_;
 
   PgStorageConfig CreateConfig(const std::vector<PgClusterConfig>& clusters,
                                uint16_t pool_min_worker,
                                u_int16_t pool_max_worker) {
-    return configs_;
+    if (clusters.size() == 0)
+      throw StorageException("No cluster configs, please define at least one "
+                             "connection to postgres DB Server",
+                             StorageType::Postgres);
+
+    ClusterConfigList cluster_configs(StorageType::Postgres);
+    for (const auto& cluster : clusters) {
+      cluster_configs.Add(std::move(PgClusterConfig(cluster)));
+    }
+
+    ConnectionPoolConfig pool_config(pool_min_worker, pool_max_worker);
+
+    PgStorageConfig config(std::move(cluster_configs), std::move(pool_config));
+
+    return __NR_RETURN_MOVE(config);
+  }
+
+  ConnectionPoolPtr CreatePools() {
+    auto pools = std::make_shared<ConnectionPool>(configs_);
+    pools_->SetPrimaryConnectionCallback(PgServer::CreatePrimaryPgConnection);
+    pools_->SetStandbyConnectionCallback(PgServer::CreateStandbyPgConnection);
+
+    return __NR_RETURN_MOVE(pools);
+  }
+
+  static ConnectionPtr CreatePrimaryPgConnection(StorageConfig* config) {
+    auto conn = std::make_shared<PgConnection>(
+        ConnectionStandbyMode::Primary,
+        config->PoolConfig().ConnectionIdleWait());
+
+    return __NR_RETURN_MOVE(conn);
+  }
+
+  static ConnectionPtr CreateStandbyPgConnection(StorageConfig* config) {
+    auto conn = std::make_shared<PgConnection>(
+        ConnectionStandbyMode::Standby,
+        config->PoolConfig().ConnectionIdleWait());
+
+    return __NR_RETURN_MOVE(conn);
   }
 };
 

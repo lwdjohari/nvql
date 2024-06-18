@@ -19,9 +19,9 @@ NVSERV_BEGIN_NAMESPACE(storages)
 class PreparedStatementItem {
  public:
   explicit PreparedStatementItem(
-      size_t statement_key, const std::string& name, const std::string& query,
+      const std::string& statement_key, const std::string& name, const std::string& query,
       const std::chrono::system_clock::time_point& created)
-                  : statement_key_(statement_key),
+                  : statement_key_(std::string(statement_key)),
                     name_(name),
                     query_(std::string(query)),
                     created_time_(
@@ -34,7 +34,7 @@ class PreparedStatementItem {
     return name_;
   }
 
-  const size_t& Key() const {
+  const std::string& Key() const {
     return statement_key_;
   }
 
@@ -43,7 +43,7 @@ class PreparedStatementItem {
   }
 
  private:
-  size_t statement_key_;
+  std::string statement_key_;
   std::string name_;
   std::string query_;
   std::chrono::system_clock::time_point created_time_;
@@ -56,7 +56,7 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   PreparedStatementManager(){};
   ~PreparedStatementManager(){};
 
-  std::optional<size_t> Register(
+  std::optional<std::string> Register(
                                  const std::string& query) {
     if (query.empty())
       return std::nullopt;
@@ -65,46 +65,46 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
       return std::nullopt;
 
     auto key = hash_fn_(query);
-
-    if (IsExist(key))
-      return false;
-
-    statements_.emplace(
-        key, std::move(PreparedStatementItem(
-                 key, std::string(std::to_string(key)), std::string(query),
-                 nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-    return key;
-  }
-
-  std::optional<size_t> Register(const std::string& name,
-                                 const std::string& query) {
-    if (query.empty())
-      return std::nullopt;
-
-    if (nvm::strings::utility::IsWhitespaceString(query))
-      return std::nullopt;
-
-    auto key = hash_fn_(query);
-
-    if (IsExist(key))
-      return false;
+    auto key_str = GenerateKey(key);
+    if (IsKeyExist(key_str))
+      return __NR_RETURN_MOVE(key_str);
 
     statements_.emplace(
-        key, std::move(PreparedStatementItem(
-                 key, std::string(name), std::string(query),
+        key_str, std::move(PreparedStatementItem(
+                 key_str, std::string(std::to_string(key)), std::string(query),
                  nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-    return key;
+    return key_str;
   }
+
+  // std::optional<size_t> Register(const std::string& name,
+  //                                const std::string& query) {
+  //   if (query.empty())
+  //     return std::nullopt;
+
+  //   if (nvm::strings::utility::IsWhitespaceString(query))
+  //     return std::nullopt;
+
+  //   auto key = hash_fn_(query);
+
+  //   if (IsKeyExist(GenerateKey(key)))
+  //     return false;
+
+  //   statements_.emplace(
+  //       key_str, std::move(PreparedStatementItem(
+  //                key_str, std::string(name), std::string(query),
+  //                nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
+  //   return key;
+  // }
 
   
 
-  bool IsExist(const size_t& statement_key) const {
+  bool IsKeyExist(const std::string& statement_key) const {
     return statements_.contains(statement_key);
   }
 
-  bool IsExist(const std::string& query) const {
+  bool IsQueryExist(const std::string& query) const {
     auto key = hash_fn_(query);
-    return IsExist(key);
+    return IsKeyExist(GenerateKey(key));
   }
 
   PreparedStatementManagerPtr Share() {
@@ -112,9 +112,13 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   }
 
  private:
-  absl::node_hash_map<size_t, PreparedStatementItem> statements_;
+  absl::node_hash_map<std::string, PreparedStatementItem> statements_;
   std::hash<std::string> hash_fn_;
   absl::Mutex mutex_;
+
+  std::string GenerateKey(const size_t& hash) const{
+    return "nvql_" + std::to_string(hash);
+  }
 };
 
 NVSERV_END_NAMESPACE
