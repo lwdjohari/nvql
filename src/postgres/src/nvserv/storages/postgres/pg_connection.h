@@ -97,11 +97,15 @@ class PgConnection : public Connection {
 #endif
   }
 
+  pqxx::connection* Driver() {
+    return conn_.get();
+  }
+
  protected:
   void OpenImpl() override {
     if (conn_)
       throw ConnectionException("Connection already created",
-                                          StorageType::Postgres);
+                                StorageType::Postgres);
     try {
       conn_ = std::make_unique<pqxx::connection>(
           "dbname=mydb user=myuser password=mypass hostaddr=127.0.0.1 "
@@ -118,7 +122,7 @@ class PgConnection : public Connection {
       throw ConnectionException(e.what(), StorageType::Postgres);
     } catch (...) {
       throw StorageException("Unknown exception caught.",
-                                       StorageType::Postgres);
+                             StorageType::Postgres);
     }
   }
 
@@ -127,7 +131,7 @@ class PgConnection : public Connection {
       return;
     if (!conn_->is_open())
       return;
-    
+
     try {
       // Explicitly close the connection
       conn_->close();

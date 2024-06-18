@@ -30,6 +30,8 @@ if(ISROOT)
     option(NVSERV_CXX_STANDARD_REQUIRED "CXX Required" ON)
     option(NVSERV_CXX_EXTENSIONS "CXX Extensions" ON)
     NV_PROPOGATE_CXX_OPTIONS(${NVSERV_CXX_VERSION} ${NVSERV_CXX_STANDARD_REQUIRED} ${NVSERV_CXX_EXTENSIONS})
+
+
 endif()
 
 NV_GET_CXX_STD_FEATURE(${NVSERV_CXX_VERSION} CXX_FEATURE)
@@ -54,6 +56,8 @@ message(STATUS "Compile Flags: ${NVQL_FEATURES_JOIN}")
 
 if(NVQL_STANDALONE)
     add_subdirectory(src/core/ build-nvserv_core)
+    set(ABSL_PROPAGATE_CXX_STD ON)
+    add_subdirectory(deps/abseil-lts20230125.1 build-abseil)
 endif(NVQL_STANDALONE)
 
 if(NVQL_FEATURE_POSTGRES)

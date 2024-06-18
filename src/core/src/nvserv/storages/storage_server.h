@@ -24,26 +24,29 @@ class StorageServer : public components::Component {
 #endif
 
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
-class StorageServer  {
- public:
-  StorageServer(){}
+  class StorageServer {
+   public:
+    StorageServer() {}
 #endif
 
-  virtual ~StorageServer(){};
+    virtual ~StorageServer(){};
 
-  virtual const StorageConfig& Configs() const = 0;
+    virtual const StorageConfig& Configs() const = 0;
 
-  virtual bool TryConnect() = 0;
+    virtual bool TryConnect() = 0;
 
-  virtual bool Shutdown(
-      bool grace_shutdown = true,
-      std::chrono::seconds deadline = std::chrono::seconds(0)) = 0;
+    virtual bool Shutdown(
+        bool grace_shutdown = true,
+        std::chrono::seconds deadline = std::chrono::seconds(0)) = 0;
 
-  virtual TransactionPtr Begin() = 0;
+    virtual TransactionPtr Begin(
+        TransactionMode mode = TransactionMode::ReadWrite) = 0;
 
-  virtual const ServerPoolPtr Pool() const = 0;
+    virtual const ConnectionPoolPtr Pool() const = 0;
 
-  virtual StorageInfo GetStorageServerInfo() const = 0;
-};
+    virtual ConnectionPoolPtr Pool() = 0;
 
-NVSERV_END_NAMESPACE
+    virtual StorageInfo GetStorageServerInfo() const = 0;
+  };
+
+  NVSERV_END_NAMESPACE

@@ -12,7 +12,6 @@ NVSERV_BEGIN_NAMESPACE(storages)
 
 class StorageServer;
 class Transaction;
-class ServerPool;
 class ClusterConfig;
 class ExecutionResult;
 class RowResult;
@@ -27,13 +26,12 @@ class PgServer;
 
 using StorageServerPtr = std::shared_ptr<StorageServer>;
 using TransactionPtr = std::shared_ptr<Transaction>;
-using ServerPoolPtr = std::shared_ptr<ServerPool>;
+using ConnectionPoolPtr = std::shared_ptr<ConnectionPool>;
 using ClusterConfigListType = std::vector<ClusterConfig>;
 using ExecutionResultPtr = std::shared_ptr<ExecutionResult>;
 using RowResultPtr = std::shared_ptr<RowResult>;
 using PreparedStatementManagerPtr = std::shared_ptr<PreparedStatementManager>;
 using ConnectionPtr = std::shared_ptr<Connection>;
-using ConnectionPoolPtr = std::shared_ptr<ConnectionPool>;
 
 /// @brief NvServ storage driver
 enum class StorageType {

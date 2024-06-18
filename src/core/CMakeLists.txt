@@ -21,6 +21,17 @@ add_library(${PROJECT_NAME}_core STATIC ${SOURCES_NVSERV_CORE} )
 target_link_libraries(${PROJECT_NAME}_core  
     PUBLIC
         nvcore
+        absl::base 
+        absl::base 
+        absl::flat_hash_map 
+        absl::algorithm
+        absl::numeric
+        absl::random_random
+        absl::synchronization 
+        absl::strings
+        absl::time
+        absl::utility
+        absl::status
     )
 set_target_properties(${PROJECT_NAME}_core PROPERTIES LINKER_LANGUAGE CXX)
 target_compile_features(${PROJECT_NAME}_core PUBLIC ${CXX_FEATURE})

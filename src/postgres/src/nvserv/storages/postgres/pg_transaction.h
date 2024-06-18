@@ -5,12 +5,75 @@
 #include <variant>
 
 #include "nvserv/global_macro.h"
+#include "nvserv/storages/connection_pool.h"
 #include "nvserv/storages/postgres/declare.h"
 #include "nvserv/storages/postgres/pg_column.h"
+#include "nvserv/storages/postgres/pg_connection.h"
 #include "nvserv/storages/postgres/pg_execution_result.h"
 #include "nvserv/storages/transaction.h"
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
+
+namespace impl {
+enum class PgInnerTransactionType { Unknown, ReadWrite, ReadOnly };
+
+class PgInnerTransactionBase {
+ public:
+  virtual ~PgInnerTransactionBase() {
+    conn_ = nullptr;
+  }
+
+  virtual ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
+                                     void* args) {
+    throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
+                                                        StorageType::Postgres);
+  }
+  virtual void Commit() {
+    throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
+                                                        StorageType::Postgres);
+  }
+  virtual void Rollback() {
+    throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
+                                                        StorageType::Postgres);
+  }
+
+  PgInnerTransactionType Type() {
+    return type_;
+  }
+
+ protected:
+  PgInnerTransactionBase(pqxx::connection* conn, PgInnerTransactionType type)
+                  : conn_(conn), type_(type) {}
+  pqxx::connection* conn_;
+  PgInnerTransactionType type_;
+};
+
+class PgWorkTransaction final : public PgInnerTransactionBase {
+ public:
+  explicit PgWorkTransaction(pqxx::connection* conn)
+                  : PgInnerTransactionBase(conn,
+                                           PgInnerTransactionType::ReadWrite),
+                    txn_(CreateTransaction()) {}
+
+  ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
+                             void* args) override {
+    return nullptr;
+  }
+  virtual void Commit() override {
+    txn_.commit();
+  }
+  virtual void Rollback() override {
+    txn_.abort();
+  }
+
+ private:
+  pqxx::work txn_;
+
+  pqxx::work CreateTransaction() {
+    return pqxx::work(*conn_);
+  }
+};
+}  // namespace impl
 
 // Alias for the variant type used in parameters, covering common PostgreSQL
 // types
@@ -32,18 +95,19 @@ using PgInternalParamType =
 
 class PgTransaction : public Transaction {
  public:
-  explicit PgTransaction(PgServer* server)
-                  : Transaction(),
+  explicit PgTransaction(PgServer* server, TransactionMode mode)
+                  : Transaction(StorageType::Postgres, mode),
                     server_(server),
-                    conn_(nullptr),
-                    txn_(CreateTransaction()) {}
+                    connection_(GetConnectionFromPool()),
+                    transact_(CreateTransaction()) {}
   virtual ~PgTransaction() {
     // must be returned the borrowed connection from connection pool
+    ReturnConnectionToThePool();
   }
 
   void Commit() override {
     try {
-      txn_.commit();
+      transact_.Commit();
     } catch (const std::exception& e) {
       // Handle commit failure
       throw std::runtime_error(std::string("Commit failed: ") + e.what());
@@ -52,7 +116,7 @@ class PgTransaction : public Transaction {
 
   void Rollback() override {
     try {
-      txn_.abort();
+      transact_.Rollback();
     } catch (const std::exception& e) {
       // Handle rollback failure
       throw std::runtime_error(std::string("Rollback failed: ") + e.what());
@@ -62,19 +126,39 @@ class PgTransaction : public Transaction {
  protected:
   ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
                                  const std::vector<std::any>& args) override {
-    conn_->prepare("qname", std::string(query.data()));
-    // auto stmnt = txn_.prepared("qname");
+    // conn_->prepare("qname", std::string(query.data()));
+    //  auto stmnt = txn_.prepared("qname");
 
     return nullptr;
   }
 
+  ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
+                                 void* args) override {
+    connection_->PrepareStatement(query);
+    return __NR_RETURN_MOVE(transact_.Execute(query, args));
+  }
+
  private:
   PgServer* server_;
-  pqxx::connection* conn_;
-  pqxx::work txn_;
+  std::shared_ptr<PgConnection> connection_;
+  impl::PgInnerTransactionBase transact_;
 
-  pqxx::work CreateTransaction() {
-    return pqxx::work(*conn_);
+  std::shared_ptr<PgConnection> GetConnectionFromPool();
+  void ReturnConnectionToThePool();
+
+  impl::PgInnerTransactionBase CreateTransaction() {
+    switch (mode_) {
+      case TransactionMode::ReadWrite:
+        return impl::PgWorkTransaction(connection_->Driver());
+      case TransactionMode::ReadOnly:
+      case TransactionMode::ReadCommitted:
+        return impl::PgWorkTransaction(connection_->Driver());
+      default:
+        throw storages::UnsupportedFeatureException(
+            "Postgres unsupported Transaction Mode: " +
+                ToStringEnumTransactionMode(mode_),
+            StorageType::Postgres);
+    }
   }
 };
 

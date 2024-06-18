@@ -242,6 +242,18 @@ class ConnectionPool {
     pool_impl_->Stop();
   }
 
+  ConnectionPtr Acquire(){
+    if (!pool_impl_ || !pool_impl_->IsRun())
+      return nullptr;
+    return pool_impl_->Acquire();
+  }
+
+  bool Return(ConnectionPtr conn) {
+    if (!pool_impl_ || !pool_impl_->IsRun())
+      return false;
+    return pool_impl_->Return(conn);
+  }
+
  protected:
   explicit ConnectionPool(StorageConfig& config) : config_(config){};
 

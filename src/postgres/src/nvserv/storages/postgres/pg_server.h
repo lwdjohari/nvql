@@ -44,8 +44,9 @@ class PgServer final : public StorageServer {
     return false;
   }
 
-  TransactionPtr Begin() override {
-    return __NR_RETURN_MOVE(std::make_shared<PgTransaction>(this));
+  TransactionPtr Begin(
+      TransactionMode mode = TransactionMode::ReadWrite) override {
+    return __NR_RETURN_MOVE(std::make_shared<PgTransaction>(this, mode));
   }
 
   const StorageConfig& Configs() const override {
@@ -56,7 +57,11 @@ class PgServer final : public StorageServer {
     return configs_;
   }
 
-  const ServerPoolPtr Pool() const override {
+  const ConnectionPoolPtr Pool() const override {
+    return nullptr;
+  }
+
+  ConnectionPoolPtr Pool() override {
     return nullptr;
   }
 
@@ -73,5 +78,30 @@ class PgServer final : public StorageServer {
     return configs_;
   }
 };
+
+// Late declare
+
+std::shared_ptr<PgConnection> PgTransaction::GetConnectionFromPool() {
+  if (!server_)
+    throw storages::TransactionException(
+        "PgServer is Null, Unable to get connection from pool",
+        StorageType::Postgres);
+
+  auto conn = server_->Pool()->Acquire();
+  if (!conn)
+    throw storages::TransactionException(
+        "Transaction Begin failed, can't acquired connection from pool",
+        StorageType::Postgres);
+
+  return __NR_RETURN_MOVE(std::static_pointer_cast<PgConnection>(conn));
+}
+
+void PgTransaction::ReturnConnectionToThePool() {
+  if (server_ != nullptr && connection_ != nullptr) {
+    server_->Pool()->Return(connection_);
+  }
+
+  server_ = nullptr;
+}
 
 NVSERV_END_NAMESPACE
