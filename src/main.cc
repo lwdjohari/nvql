@@ -134,31 +134,15 @@ int main() {
                   << std::endl;
 
         swt.Reset();
-
-        auto cursor = Cursor(*result);
-        for (const auto row : cursor) {
-          auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
-              row, {"user_id", "username", "status"});
-
-          auto cust_id = std::get<0>(dyn);  
-          auto name = std::get<1>(dyn);     
-          auto status = std::get<2>(dyn);  
-
-          std::cout << name << " {id: " << cust_id << "; status: " << status
-                    << "; query time: " << swt.ElapsedMilliseconds() << "ms;}"
-                    << std::endl;
-
-          swt.Reset();
-        }
       }
-
-      std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
-                << "ms" << std::endl;
-      server->Shutdown();
-    }
-    catch (const StorageException& e) {
-      std::cerr << e.what() << '\n';
     }
 
-    return 0;
+    std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
+              << "ms" << std::endl;
+    server->Shutdown();
+  } catch (const StorageException& e) {
+    std::cerr << e.what() << '\n';
   }
+
+  return 0;
+}
