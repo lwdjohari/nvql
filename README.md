@@ -1,4 +1,6 @@
 # NvQL
+
+<img src="nvql.png" width="300"/>
 Unified Data Layer Library for postgres, oracle, mysql &amp; sqlite database for C++ 14 &amp; 17.<br/>
 Consistent API across databases, high productivity, reusable and low overhead.<br/>
 All query executions are using prepared statement and NvQL handles it for you.<br/>
