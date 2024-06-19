@@ -31,7 +31,7 @@ int main() {
   // Connection pool with 5 connections standby, max 10 connections
   auto clusters = {postgres::PgClusterConfig(
       "db-example", "the-user", "the-password", "localhost", 5433)};
-  StorageServerPtr server = std::make_shared<postgres::PgServer>(clusters, 5, 10);
+  StorageServerPtr server = postgres::PgServer::MakePgServer(clusters, 5, 10);
 
   try {
     server->TryConnect();
