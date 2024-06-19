@@ -23,6 +23,7 @@ Serving for easy to use low overhead unified abstraction data layer
 
 int main() {
   using namespace nvserv::storages;
+  using namespace nvserv::storages::parameters;
 
   // Only clusters, DB server declaration and dialect that are DB Specific
   // For NvQL executions are abstracted through unified API.
@@ -35,11 +36,11 @@ int main() {
 
   try {
     server->TryConnect();
-    auto tx = server->Begin();
+    auto tx = server->Begin(TransactionMode::ReadOnly);
 
-    int32_t customer_status = 1;
+    auto status_filter = Param::SmallInt(1);
     auto result = tx->Execute("select * from customer where status = $1",
-                              customer_status);
+                              status_filter);
 
     if (result->Empty()) {
       std::cout << "No customers data.." << std::endl;
