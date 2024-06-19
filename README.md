@@ -1,7 +1,8 @@
 # NvQL
 Unified Data Layer Library for postgres, oracle, mysql &amp; sqlite database for C++ 14 &amp; 17.<br/>
 Consistent API across databases, high productivity, reusable and low overhead.<br/>
-All query executions are using prepared statement and NvQL handles it for you.
+All query executions are using prepared statement and NvQL handles it for you.<br/>
+Allthough we still give you ```ExecuteNonPrepared()``` method for handling some certain case.
 
 ```NvQL``` is being developed primarily for hiqh productivity & reusable  efficient approach of c++ unified data layer library for NvServ, a rapid server framework.
 
@@ -136,15 +137,15 @@ High quality, High productivity whatever database you choose.
 ## Query Execution Implementations
 
 NvQL by default decided the query execution approach only took certain methods and declare the approach as the first-class citizen and being implement under-the-hood.
-- All the query executions are executed via prepared statement & parameter values.
+- ```Execute()``` : Query executions via prepared statement & parameter values.
+- ```ExecuteNonPrepared()``` : Non prepares statement query executions & parameter values support.
 - All the query executions are transaction based.
 - NvQL manages the prepared statement routines & boilerplate, developer just need to send the SQL query with parameters and that's all.
 - Cluster Connection & fallback mechanism
 - Connection Pool & connection idle wake up
 - Transaction Mode (options to choose different mode of transactions)
 - Binary Transport Protocol when supported & fallback mechanism
-- Prepared Statement
-- Parameterized parameter (auto sanitazion)
+- Parameterized parameter (with support for specific DB parameter type)
   
 NvQL manages the acquiring, returning connections to the pool, <br/>
 wiring all the necessity of transaction <br/>
@@ -155,8 +156,7 @@ This give flexibility for developer  as the last resort and give big relief when
 
 NvQL from-day-one and by design is not suppose to support implementation
 - transaction-less query
-- sql query string execution (without prepared statement)
-- multi-level/nested transactions
+- automatic multi-level/nested transactions (you should still manually set correct implementations)
 
 
 ## Motivation
