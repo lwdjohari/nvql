@@ -87,7 +87,12 @@ enum class TransactionMode : uint16_t {
   //
   // Support: pg.
   // Fallback: ReadCommitted in oracle & mysql.
-  ReadOnly = 4
+  ReadOnly = 4,
+  // No Db Transaction will be used, use with cautions
+  //
+  // Support: pg.
+  // Fallback: ReadWrite on others
+  NonTransaction = 8
 };
 
 NVM_ENUMCLASS_ENABLE_BITMASK_OPERATORS(TransactionMode)
@@ -101,7 +106,9 @@ NVM_ENUM_TO_STRING_FORMATTER(TransactionMode, case TransactionMode::Unknown
                              case TransactionMode::ReadCommitted
                              : return "ReadCommitted";
                              case TransactionMode::ReadOnly
-                             : return "ReadOnly";)
+                             : return "ReadOnly";
+                             case TransactionMode::NonTransaction
+                             : return "NonTransaction";)
 
 enum class ConnectionMode {
   Unknown = 0,

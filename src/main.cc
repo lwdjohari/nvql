@@ -80,7 +80,8 @@ int main() {
   auto clusters = {postgres::PgClusterConfig("minechain", "mnvx", "mnvx",
                                              "172.21.240.1", 5433)};
 
-  StorageServerPtr server = postgres::PgServer::MakePgServer(clusters, 2, 2);
+  StorageServerPtr server =
+      postgres::PgServer::MakePgServer("nvql-pg", clusters, 1, 1);
   try {
     nvm::Stopwatch sw;
 
@@ -88,7 +89,7 @@ int main() {
     std::cout << "Connect time: " << sw.ElapsedMilliseconds() << "ms\n"
               << std::endl;
 
-    auto transact_mode = TransactionMode::ReadWrite;
+    auto transact_mode = TransactionMode::ReadOnly;
     std::cout << "Create DB Transaction: "
               << ToStringEnumTransactionMode(transact_mode) << std::endl;
 
@@ -112,6 +113,33 @@ int main() {
     nvm::Stopwatch swt;
     for (size_t i = 0; i < 10; i++) {
       ExecutionResultPtr result =
+          tx->ExecuteNonPrepared(query, {status_filter, user_id_filter});
+
+      if (result->Empty()) {
+        std::cout << "No customers data.." << std::endl;
+        server->Shutdown();
+        return 0;
+      }
+
+      auto cursor = Cursor(*result);
+      for (const auto row : cursor) {
+        auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+            row, {"user_id", "username", "status"});
+
+        auto cust_id = std::get<0>(dyn);  // row->As<int32_t>("user_id");
+        auto name = std::get<1>(dyn);     // row->As<std::string>("username");
+        auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
+
+        std::cout << name << " {id: " << cust_id << "; status: " << status
+                  << "; query time non-prepared: " << swt.ElapsedMilliseconds() << "ms;}"
+                  << std::endl;
+
+        swt.Reset();
+      }
+    }
+
+    for (size_t i = 0; i < 10; i++) {
+      ExecutionResultPtr result =
           tx->Execute(query, {status_filter, user_id_filter});
 
       if (result->Empty()) {
@@ -130,7 +158,7 @@ int main() {
         auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
 
         std::cout << name << " {id: " << cust_id << "; status: " << status
-                  << "; query time: " << swt.ElapsedMilliseconds() << "ms;}"
+                  << "; query time prepared: " << swt.ElapsedMilliseconds() << "ms;}"
                   << std::endl;
 
         swt.Reset();

@@ -15,7 +15,13 @@
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 namespace impl {
-enum class PgInnerTransactionType { Unknown, ReadWrite, ReadOnly };
+enum class PgInnerTransactionType {
+  Unknown,
+  ReadWrite,
+  ReadOnly,
+  NonTransaction,
+  SubTransaction
+};
 
 inline void TranslateParams(pqxx::params& params,
                             const parameters::ParameterArgs& nvql_params) {
@@ -71,7 +77,7 @@ class PgInnerTransactionBase {
   }
 
   virtual ExecutionResultPtr ExecuteNonPrepared(
-      const __NR_STRING_COMPAT_REF query_key,
+      const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) {
     throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
                                                         StorageType::Postgres);
@@ -91,19 +97,33 @@ class PgInnerTransactionBase {
   }
 
  protected:
-  PgInnerTransactionBase(pqxx::connection* conn, PgInnerTransactionType type)
+  PgInnerTransactionBase(pqxx::connection* conn,  PgInnerTransactionType type)
                   : conn_(conn), type_(type) {}
   pqxx::connection* conn_;
   PgInnerTransactionType type_;
 };
 
+/**
+ * @class PgWorkTransaction
+ * @brief PostgreSQL read-write transaction class.
+ */
 class PgWorkTransaction final : public PgInnerTransactionBase {
  public:
+  /**
+   * @brief Constructor.
+   * @param conn The PostgreSQL connection.
+   */
   explicit PgWorkTransaction(pqxx::connection* conn)
                   : PgInnerTransactionBase(conn,
                                            PgInnerTransactionType::ReadWrite),
                     txn_(CreateTransaction()) {}
 
+  /**
+   * @brief Execute a prepared statement.
+   * @param query_key The query key.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
   ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
                              const parameters::ParameterArgs& args) override {
     if (args.size() == 0) {
@@ -118,6 +138,12 @@ class PgWorkTransaction final : public PgInnerTransactionBase {
     }
   }
 
+  /**
+   * @brief Execute a non-prepared statement.
+   * @param query The query.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
   ExecutionResultPtr ExecuteNonPrepared(
       const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) override {
@@ -133,20 +159,271 @@ class PgWorkTransaction final : public PgInnerTransactionBase {
     }
   }
 
+  /**
+   * @brief Commit the transaction.
+   */
   void Commit() override {
     txn_.commit();
   }
+
+  /**
+   * @brief Rollback the transaction.
+   */
   void Rollback() override {
     txn_.abort();
   }
 
  private:
-  pqxx::work txn_;
+  pqxx::work txn_;  ///< The PostgreSQL work transaction.
 
+  /**
+   * @brief Create a new work transaction.
+   * @return The created work transaction.
+   */
   pqxx::work CreateTransaction() {
     return pqxx::work(*conn_);
   }
 };
+
+/**
+ * @class PgNonTransaction
+ * @brief PostgreSQL non-transactional execution class.
+ */
+class PgNonTransaction final : public PgInnerTransactionBase {
+ public:
+  /**
+   * @brief Constructor.
+   * @param conn The PostgreSQL connection.
+   */
+  explicit PgNonTransaction(pqxx::connection* conn)
+                  : PgInnerTransactionBase(
+                        conn, PgInnerTransactionType::NonTransaction),
+                    txn_(CreateTransaction()) {}
+
+  /**
+   * @brief Execute a prepared statement.
+   * @param query_key The query key.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
+                             const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Execute a non-prepared statement.
+   * @param query The query.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Commit the transaction. No operation for non-transaction.
+   */
+  void Commit() override {
+    // No commit necessary for non-transaction
+  }
+
+  /**
+   * @brief Rollback the transaction. No operation for non-transaction.
+   */
+  void Rollback() override {
+    // No rollback necessary for non-transaction
+  }
+
+ private:
+  pqxx::nontransaction txn_;  ///< The PostgreSQL non-transaction.
+
+  /**
+   * @brief Create a new non-transaction.
+   * @return The created non-transaction.
+   */
+  pqxx::nontransaction CreateTransaction() {
+    return pqxx::nontransaction(*conn_);
+  }
+};
+
+/**
+ * @class PgReadOnlyTransaction
+ * @brief PostgreSQL read-only transaction class.
+ */
+class PgReadOnlyTransaction final : public PgInnerTransactionBase {
+ public:
+  /**
+   * @brief Constructor.
+   * @param conn The PostgreSQL connection.
+   */
+  explicit PgReadOnlyTransaction(pqxx::connection* conn)
+                  : PgInnerTransactionBase(conn,
+                                           PgInnerTransactionType::ReadOnly),
+                    txn_(CreateTransaction()) {}
+
+  /**
+   * @brief Execute a prepared statement.
+   * @param query_key The query key.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
+                             const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Execute a non-prepared statement.
+   * @param query The query.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Commit the transaction.
+   */
+  void Commit() override {
+    txn_.commit();
+  }
+
+  /**
+   * @brief Rollback the transaction.
+   */
+  void Rollback() override {
+    txn_.abort();
+  }
+
+ private:
+  pqxx::read_transaction txn_;  ///< The PostgreSQL read-only transaction.
+
+  /**
+   * @brief Create a new read-only transaction.
+   * @return The created read-only transaction.
+   */
+  pqxx::read_transaction CreateTransaction() {
+    return pqxx::read_transaction(*conn_);
+  }
+};
+
+/**
+ * @class PgSubTransaction
+ * @brief PostgreSQL subtransaction class.
+ */
+template <typename TParentTrans = pqxx::work>
+class PgSubTransaction final : public PgInnerTransactionBase {
+ public:
+  /**
+   * @brief Constructor.
+   * @param parent_txn The parent transaction.
+   */
+  explicit PgSubTransaction(TParentTrans& parent_txn)
+                  : PgInnerTransactionBase(
+                        nullptr, PgInnerTransactionType::SubTransaction),
+                    txn_(parent_txn) {}
+
+  /**
+   * @brief Execute a prepared statement.
+   * @param query_key The query key.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
+                             const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Execute a non-prepared statement.
+   * @param query The query.
+   * @param args The parameters for the query.
+   * @return The execution result.
+   */
+  ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
+  /**
+   * @brief Commit the subtransaction.
+   */
+  void Commit() override {
+    txn_.commit();
+  }
+
+  /**
+   * @brief Rollback the subtransaction.
+   */
+  void Rollback() override {
+    txn_.abort();
+  }
+
+ private:
+  pqxx::subtransaction txn_;  ///< The PostgreSQL subtransaction.
+};
+
 }  // namespace impl
 
 // Alias for the variant type used in parameters, covering common PostgreSQL
@@ -199,15 +476,6 @@ class PgTransaction : public Transaction {
   }
 
  protected:
-  // ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
-  //                                const std::vector<std::any>& args) override
-  //                                {
-  //   // conn_->prepare("qname", std::string(query.data()));
-  //   //  auto stmnt = txn_.prepared("qname");
-
-  //   return nullptr;
-  // }
-
   ExecutionResultPtr ExecuteImpl(
       const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) override {
@@ -217,7 +485,8 @@ class PgTransaction : public Transaction {
                                  StorageType::Postgres);
 
     if (key.value().second)
-      connection_->Driver()->prepare(key.value().first, query.data());
+      connection_->Driver()->prepare(key.value().first,
+                                     __NR_CALL_STRING_COMPAT_REF(query));
 
     return __NR_RETURN_MOVE(transact_->Execute(key.value().first, args));
   }
@@ -225,27 +494,30 @@ class PgTransaction : public Transaction {
   ExecutionResultPtr ExecuteNonPreparedImpl(
       const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) override {
-    throw TransactionException("Exceptions on empty sql query on Execute",
-                               StorageType::Postgres);
+    if (query.empty())
+      throw TransactionException("Exceptions on empty sql query on Execute",
+                                 StorageType::Postgres);
 
-    return __NR_RETURN_MOVE(transact_->ExecuteNonPrepared(query.data(), args));
+    return __NR_RETURN_MOVE(transact_->ExecuteNonPrepared(query, args));
   }
 
  private:
   PgServer* server_;
   std::shared_ptr<PgConnection> connection_;
-  std::shared_ptr<impl::PgInnerTransactionBase> transact_;
+  std::unique_ptr<impl::PgInnerTransactionBase> transact_;
 
   std::shared_ptr<PgConnection> GetConnectionFromPool();
   void ReturnConnectionToThePool();
 
-  std::shared_ptr<impl::PgInnerTransactionBase> CreateTransaction() {
+  std::unique_ptr<impl::PgInnerTransactionBase> CreateTransaction() {
     switch (mode_) {
       case TransactionMode::ReadWrite:
-        return std::make_shared<impl::PgWorkTransaction>(connection_->Driver());
+        return std::make_unique<impl::PgWorkTransaction>(connection_->Driver());
       case TransactionMode::ReadOnly:
       case TransactionMode::ReadCommitted:
-        return std::make_shared<impl::PgWorkTransaction>(connection_->Driver());
+        return std::make_unique<impl::PgReadOnlyTransaction>(connection_->Driver());
+      case TransactionMode::NonTransaction:
+        return std::make_unique<impl::PgNonTransaction>(connection_->Driver());
       default:
         throw storages::TransactionException(
             "Postgres unsupported Transaction Mode: " +
