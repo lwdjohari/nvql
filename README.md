@@ -81,7 +81,7 @@ int main() {
 
 NvQL have tuple binding support out-of-the-box
 
-```Mapper::Dynamic<T..>()``` can also be use for casting to another type directly.
+```Mapper::Dynamic<T...>()``` can also be use for casting to another type directly.
 
 ```cxx
 
