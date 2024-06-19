@@ -128,7 +128,8 @@ using ParameterArgs = std::vector<Param>;
 
 class Transaction {
  public:
-  Transaction(StorageType type, TransactionMode mode):type_(type),mode_(mode) {};
+  Transaction(StorageType type, TransactionMode mode)
+                  : type_(type), mode_(mode){};
   virtual ~Transaction(){};
 
   /// @brief Execute SQL statement using NvQL. Behind-scenes NvQL data layer
@@ -139,22 +140,42 @@ class Transaction {
   /// @param query
   /// @param ...args
   /// @return
-  // template <typename... Args>
-  // [[nodiscard]] ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
-  //                                          const Args&... args) {
-  //   std::vector<std::any> anyArgs = {args...};
-  //   return ExecuteImpl(query, anyArgs);
-  // }
+  template <typename... Args>
+  [[nodiscard]] ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query,
+                                           const Args&... args) {
+    std::vector<parameters::Param> params = {args...};
+    return ExecuteImpl(query, params);
+  }
 
-  [[nodiscard]] ExecutionResultPtr Execute(
-      const __NR_STRING_COMPAT_REF query) {
+  // Execute query string
+  // Behind-scene NvQL will wiring and manager the prepare statment
+  // and will be execute using prepared statement
+  [[nodiscard]] ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query) {
     return ExecuteImpl(query, parameters::ParameterArgs());
   }
 
+  // Execute query string with parameters
+  // Behind-scene NvQL will wiring and manager the prepare statment
+  // and will be execute using prepared statement and send the parameters
   [[nodiscard]] ExecutionResultPtr Execute(
       const __NR_STRING_COMPAT_REF query,
       const parameters::ParameterArgs& args) {
     return ExecuteImpl(query, args);
+  }
+
+  // Execute query and send the query string
+  // Bypass the prepared statement routines
+  [[nodiscard]] ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) {
+    return ExecuteNonPreparedImpl(query, args);
+  }
+
+  // Execute query and send the query string
+  // Bypass the prepared statement routines
+  [[nodiscard]] ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query) {
+    return ExecuteNonPreparedImpl(query, parameters::ParameterArgs());
   }
 
   const StorageType& Type() const {
@@ -173,10 +194,16 @@ class Transaction {
   TransactionMode mode_;
   // Non-template virtual function
   // virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
-  //                                        const std::vector<std::any>& args) = 0;
+  //                                        const std::vector<std::any>& args) =
+  //                                        0;
 
-  virtual ExecutionResultPtr ExecuteImpl(const __NR_STRING_COMPAT_REF query,
-                                        const parameters::ParameterArgs& args) = 0;
+  virtual ExecutionResultPtr ExecuteImpl(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) = 0;
+
+  virtual ExecutionResultPtr ExecuteNonPreparedImpl(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) = 0;
 };
 
 NVSERV_END_NAMESPACE

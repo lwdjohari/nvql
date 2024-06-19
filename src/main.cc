@@ -4,9 +4,11 @@
 #include "nvm/stopwatch.h"
 #include "nvserv/storages/postgres/pg_server.h"
 
-int main() {
+void ParamsTest() {
   using namespace nvserv::storages;
   using namespace nvserv::storages::parameters;
+
+  std::cout << "NvQL Params Test\n" << std::endl;
 
   ParameterArgs params = {Param::SmallInt(16), Param::String("Hey world"),
                           Param::Timestampz(nvserv::NvDateTime::UtcNow())};
@@ -59,46 +61,58 @@ int main() {
   }
 
   auto utc = Param::Timestampz(nvserv::NvDateTime::UtcNow());
-  std::cout << "Param Size: " << sizeof(utc) << std::endl;
+  std::cout << "Param Size: " << sizeof(utc) << "\n" << std::endl;
+}
+
+int main() {
+  ParamsTest();
+
+  using namespace nvserv::storages;
+  using namespace nvserv::storages::parameters;
+
+  std::cout << "NvQL Transaction Test\n" << std::endl;
 
   // Only clusters, server declarations and dialect that are DB Specific
   // For NvQL executions are abstracted through unified API.
-
-  // 'postgresql://mnvx:mnvx@172.21.240.1:5433/minechain'
 
   // Connect to standalone Postgress DB Server
   // Connection pool with 5 connections standby, max 10 connections
   auto clusters = {postgres::PgClusterConfig("minechain", "mnvx", "mnvx",
                                              "172.21.240.1", 5433)};
-  StorageServerPtr server =
-      std::make_shared<postgres::PgServer>(clusters, 1, 1);
 
+  StorageServerPtr server = postgres::PgServer::MakePgServer(clusters, 2, 2);
   try {
     nvm::Stopwatch sw;
 
     server->TryConnect();
-    std::cout << "Connect time: " << sw.ElapsedMilliseconds() << "ms"
+    std::cout << "Connect time: " << sw.ElapsedMilliseconds() << "ms\n"
+              << std::endl;
+
+    auto transact_mode = TransactionMode::ReadWrite;
+    std::cout << "Create DB Transaction: "
+              << ToStringEnumTransactionMode(transact_mode) << std::endl;
+
+    sw.Reset();
+    auto tx = server->Begin(transact_mode);
+
+    std::cout << "Transaction Creation: " << sw.ElapsedMilliseconds() << "ms\n"
               << std::endl;
     sw.Reset();
 
-    std::cout << "Create Transact" << std::endl;
-    auto tx = server->Begin();
-
-    std::cout << "Transaction Creation: " << sw.ElapsedMilliseconds() << "ms"
+    std::string query = "select * from users u inner join company c \n"
+                        "on u.company_id = c.company_id \n"
+                        "where u.status = $1 and u.user_id = $2";
+    std::cout << "Prepare SQL Query statement: \n"
+              << query << "\n"
               << std::endl;
-    sw.Reset();
 
-    int32_t customer_status = 1;
+    auto status_filter = Param::SmallInt(1);
+    auto user_id_filter = Param::Int(2);
+
     nvm::Stopwatch swt;
     for (size_t i = 0; i < 10; i++) {
       ExecutionResultPtr result =
-          tx->Execute("select * from users u inner join company c on "
-                      "u.company_id = c.company_id");
-      auto cursor = Cursor(*result);
-
-      std::cout << "Query Trip time: " << swt.ElapsedMilliseconds() << "ms"
-                << std::endl;
-      swt.Reset();
+          tx->Execute(query, {status_filter, user_id_filter});
 
       if (result->Empty()) {
         std::cout << "No customers data.." << std::endl;
@@ -106,26 +120,45 @@ int main() {
         return 0;
       }
 
-      // auto row =  result->At(0);
-
-      // std::cout << "Row size: " << row->Size() << std::endl;
+      auto cursor = Cursor(*result);
       for (const auto row : cursor) {
-        auto cust_id = row->As<int32_t>("user_id");
-        auto name = row->As<std::string>("username");
-        auto status = row->As<int16_t>("status");
+        auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+            row, {"user_id", "username", "status"});
 
-        std::cout << "[" << cust_id << "] " << name << " (" << status << ")"
+        auto cust_id = std::get<0>(dyn);  // row->As<int32_t>("user_id");
+        auto name = std::get<1>(dyn);     // row->As<std::string>("username");
+        auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
+
+        std::cout << name << " {id: " << cust_id << "; status: " << status
+                  << "; query time: " << swt.ElapsedMilliseconds() << "ms;}"
                   << std::endl;
+
+        swt.Reset();
+
+        auto cursor = Cursor(*result);
+        for (const auto row : cursor) {
+          auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+              row, {"user_id", "username", "status"});
+
+          auto cust_id = std::get<0>(dyn);  
+          auto name = std::get<1>(dyn);     
+          auto status = std::get<2>(dyn);  
+
+          std::cout << name << " {id: " << cust_id << "; status: " << status
+                    << "; query time: " << swt.ElapsedMilliseconds() << "ms;}"
+                    << std::endl;
+
+          swt.Reset();
+        }
       }
+
+      std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
+                << "ms" << std::endl;
+      server->Shutdown();
+    }
+    catch (const StorageException& e) {
+      std::cerr << e.what() << '\n';
     }
 
-    std::cout << "Query Execution Total time: " << sw.ElapsedMilliseconds()
-              << "ms" << std::endl;
-    server->Shutdown();
-
-  } catch (const StorageException& e) {
-    std::cerr << e.what() << '\n';
+    return 0;
   }
-
-  return 0;
-}

@@ -105,7 +105,7 @@ class PgConnection : public Connection {
       throw ConnectionException("Connection already created",
                                 StorageType::Postgres);
     try {
-      std::cout << "Connection string:" << connection_string_ << std::endl;
+      //std::cout << "Connection string:" << connection_string_ << std::endl;
 
       conn_ = std::make_unique<pqxx::connection>(connection_string_);
 
@@ -164,12 +164,13 @@ class PgConnection : public Connection {
 
   size_t CreateHashKey() {
     std::ostringstream ss;
-    ss << ToStringEnumStorageType(type_) << " | "
-       << std::to_string(nvm::utils::RandomizeUint32t()) << " | "
-       << std::to_string(nvm::utils::RandomizeUint32t());
-    auto hash_str = ss.str();
-    std::cout << "Connection Hash Key:" << hash_str << std::endl;
-    return hash_fn_(hash_str);
+    ss << "{" << ToStringEnumStorageType(type_) << " | "
+       << std::to_string(nvm::utils::RandomizeUint32t()) << "}";
+       //<< std::to_string(nvm::utils::RandomizeUint32t());
+    auto feed = ss.str();
+    auto hash_key = hash_fn_(feed);
+    //std::cout << "Connection Hash Key:" << hash_key << " (from:\"" << feed <<"\")" << std::endl;
+    return hash_key;
   }
 
   std::string BuildConnectionString() {
@@ -184,7 +185,7 @@ class PgConnection : public Connection {
     
     for ( auto cluster : clusters_.Configs()) {
       
-      std::cout << "Config for: " << ToStringEnumStorageType( cluster->Type()) << std::endl;
+      //std::cout << "Config for: " << ToStringEnumStorageType( cluster->Type()) << std::endl;
       auto pg_cluster = std::dynamic_pointer_cast<PgClusterConfig>(cluster);
       if (index == 0) {
         host << "postgresql://" << std::string(pg_cluster->User()) << ":"

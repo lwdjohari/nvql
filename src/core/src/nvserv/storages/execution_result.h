@@ -9,6 +9,7 @@
 #include "nvserv/storages/declare.h"
 #include "nvserv/storages/row_result.h"
 #include "nvserv/storages/row_result_iterator.h"
+#include "nvserv/storages/mapper.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 

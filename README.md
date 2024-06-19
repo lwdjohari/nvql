@@ -72,6 +72,30 @@ int main() {
 
 ```
 
+### Tuple binding support
+
+NvQL have tuple binding support out-of-the-box
+
+```Mapper::Dynamic<T..>()``` can also be use for casting to another type directly.
+
+```cxx
+
+auto cursor = Cursor(*result);
+for (const auto row : cursor) {
+
+auto dyn = Mapper::Dynamic<std::string, std::string, std::string>(
+    row, {"user_id", "username", "status"});
+
+auto cust_id = std::get<0>(dyn);  
+auto name = std::get<1>(dyn);     
+auto status = std::get<2>(dyn);  
+
+std::cout << name << " {id: " << cust_id << "; status: " << status
+          << "; query time: ";}"
+          << std::endl;
+
+```
+
 ### <u>Database supported</u>
 - Postgres : WIP
 - Oracle : WIP

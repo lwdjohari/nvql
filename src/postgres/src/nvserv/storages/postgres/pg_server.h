@@ -39,14 +39,14 @@ class PgServer final : public StorageServer {
   ~PgServer() {}
 
   bool TryConnect() override {
-     pools_->Run();
-     return true;
+    pools_->Run();
+    return true;
   }
 
   bool Shutdown(
       bool grace_shutdown = true,
       std::chrono::seconds deadline = std::chrono::seconds(0)) override {
-        pools_->Stop();
+    pools_->Stop();
     return false;
   }
 
@@ -73,6 +73,13 @@ class PgServer final : public StorageServer {
 
   StorageInfo GetStorageServerInfo() const override {
     return StorageInfo();
+  }
+
+  static PgServerPtr MakePgServer(
+      std::initializer_list<PgClusterConfig> clusters,
+      uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10) {
+    return __NR_RETURN_MOVE(std::make_shared<postgres::PgServer>(
+        clusters, pool_min_worker, pool_max_worker));
   }
 
  private:
@@ -108,12 +115,11 @@ class PgServer final : public StorageServer {
   }
 
   static ConnectionPtr CreatePrimaryPgConnection(StorageConfig* config) {
-    if(!config)
+    if (!config)
       throw Exception("Config is null");
 
     auto conn = std::make_shared<PgConnection>(
-        config->ClusterConfigs(),
-        ConnectionStandbyMode::Primary,
+        config->ClusterConfigs(), ConnectionStandbyMode::Primary,
         config->PoolConfig().ConnectionIdleWait());
 
     return __NR_RETURN_MOVE(conn);
@@ -121,8 +127,7 @@ class PgServer final : public StorageServer {
 
   static ConnectionPtr CreateStandbyPgConnection(StorageConfig* config) {
     auto conn = std::make_shared<PgConnection>(
-        config->ClusterConfigs(),
-        ConnectionStandbyMode::Standby,
+        config->ClusterConfigs(), ConnectionStandbyMode::Standby,
         config->PoolConfig().ConnectionIdleWait());
 
     return __NR_RETURN_MOVE(conn);

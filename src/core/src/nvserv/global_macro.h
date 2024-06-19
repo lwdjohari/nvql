@@ -46,6 +46,14 @@ reinterpret_cast<const std::string*>(view_name.data())
 view_name
 #endif
 
+#if __NR_CPP17
+#define __NR_CALL_STRING_COMPAT_REF(var) \
+var.data()
+#else
+#define __NR_CALL_STRING_COMPAT_REF(var) \
+var
+#endif
+
 #define NVSERV_NAMESPACE namespace nvserv
 #define NVSERV_BEGIN_ROOT_NAMESPACE NVSERV_NAMESPACE {
 #define NVSERV_BEGIN_NAMESPACE(arg) NVSERV_NAMESPACE::arg {

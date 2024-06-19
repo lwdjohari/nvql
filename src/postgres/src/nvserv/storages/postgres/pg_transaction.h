@@ -64,11 +64,19 @@ class PgInnerTransactionBase {
     conn_ = nullptr;
   }
 
-  virtual ExecutionResultPtr Execute(const std::string& query_key,
+  virtual ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
                                      const parameters::ParameterArgs& args) {
     throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
                                                         StorageType::Postgres);
   }
+
+  virtual ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query_key,
+      const parameters::ParameterArgs& args) {
+    throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
+                                                        StorageType::Postgres);
+  }
+
   virtual void Commit() {
     throw nvserv::storages::UnsupportedFeatureException("Unimplemented Execute",
                                                         StorageType::Postgres);
@@ -96,23 +104,35 @@ class PgWorkTransaction final : public PgInnerTransactionBase {
                                            PgInnerTransactionType::ReadWrite),
                     txn_(CreateTransaction()) {}
 
-  ExecutionResultPtr Execute(const std::string& query_key,
+  ExecutionResultPtr Execute(const __NR_STRING_COMPAT_REF query_key,
                              const parameters::ParameterArgs& args) override {
     if (args.size() == 0) {
-      auto result = txn_.exec_prepared(query_key);
-      // for (auto const& row : result) {
-      //   for (auto const& field : row)
-      //     std::cout << field.c_str() << '\t';
-      //   std::cout << '\n';
-      // }
+      auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
       return std::make_shared<PgExecutionResult>(std::move(result));
     } else {
       pqxx::params params;
       TranslateParams(params, args);
-      auto result = txn_.exec_prepared(query_key, params);
+      auto result =
+          txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
       return std::make_shared<PgExecutionResult>(std::move(result));
     }
   }
+
+  ExecutionResultPtr ExecuteNonPrepared(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) override {
+    if (args.size() == 0) {
+      auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    } else {
+      pqxx::params params;
+      TranslateParams(params, args);
+      auto result =
+          txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
+      return std::make_shared<PgExecutionResult>(std::move(result));
+    }
+  }
+
   void Commit() override {
     txn_.commit();
   }
@@ -200,6 +220,15 @@ class PgTransaction : public Transaction {
       connection_->Driver()->prepare(key.value().first, query.data());
 
     return __NR_RETURN_MOVE(transact_->Execute(key.value().first, args));
+  }
+
+  ExecutionResultPtr ExecuteNonPreparedImpl(
+      const __NR_STRING_COMPAT_REF query,
+      const parameters::ParameterArgs& args) override {
+    throw TransactionException("Exceptions on empty sql query on Execute",
+                               StorageType::Postgres);
+
+    return __NR_RETURN_MOVE(transact_->ExecuteNonPrepared(query.data(), args));
   }
 
  private:
