@@ -26,7 +26,7 @@ class ConnectionBase {
   virtual std::chrono::system_clock::time_point LastPing() const = 0;
 
   virtual ConnectionStandbyMode StandbyMode() const = 0;
-
+  virtual const std::string& Name() const = 0;
   ///< Write state when when connection being acquired to pool
   virtual void Acquire() = 0;
 
@@ -63,9 +63,9 @@ class ConnectionBase {
 
   virtual StorageType Type() const = 0;
 
-  virtual const std::string& GetConnectionString() const =0;
+  virtual const std::string& GetConnectionString() const = 0;
 
-  virtual std::optional<std::pair<std::string,bool>> PrepareStatement(
+  virtual std::optional<std::pair<std::string, bool>> PrepareStatement(
       __NR_STRING_COMPAT_REF query) = 0;
   virtual PreparedStatementManagerPtr PreparedStatement() = 0;
 
@@ -78,6 +78,11 @@ class Connection : public ConnectionBase {
   StorageType Type() const override {
     return type_;
   }
+
+  const std::string& Name() const override {
+    return name_;
+  }
+
   ///< Write state when when connection being acquired to pool
   void Acquire() override {
     absl::MutexLock lock(&mutex_);
@@ -134,9 +139,11 @@ class Connection : public ConnectionBase {
 
  protected:
   explicit Connection(
-      StorageType type, ConnectionStandbyMode standby_mode,
+      const std::string& name, StorageType type,
+      ConnectionStandbyMode standby_mode,
       std::chrono::seconds mark_idle_after = std::chrono::seconds(300))
                   : ConnectionBase(),
+                    name_(std::string(name)),
                     prepared_statement_manager_(
                         std::make_shared<PreparedStatementManager>()),
                     created_(nvm::dates::DateTime::UtcNow()
@@ -149,6 +156,7 @@ class Connection : public ConnectionBase {
                     type_(type),
                     standby_mode_(standby_mode) {}
 
+  std::string name_;
   mutable absl::Mutex mutex_;
   PreparedStatementManagerPtr prepared_statement_manager_;
   std::chrono::system_clock::time_point created_;

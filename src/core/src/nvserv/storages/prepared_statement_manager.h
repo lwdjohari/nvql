@@ -19,7 +19,8 @@ NVSERV_BEGIN_NAMESPACE(storages)
 class PreparedStatementItem {
  public:
   explicit PreparedStatementItem(
-      const std::string& statement_key, const std::string& name, const std::string& query,
+      const std::string& statement_key, const std::string& name,
+      const std::string& query,
       const std::chrono::system_clock::time_point& created)
                   : statement_key_(std::string(statement_key)),
                     name_(name),
@@ -51,29 +52,32 @@ class PreparedStatementItem {
 
 /// @brief Managing prepared statement query, one connection will be have one
 /// PreparedStatementManager.
-class PreparedStatementManager : public std::enable_shared_from_this<PreparedStatementManager> {
+class PreparedStatementManager : public std::enable_shared_from_this<
+                                     PreparedStatementManager> {
  public:
   PreparedStatementManager(){};
   ~PreparedStatementManager(){};
 
-  std::optional<std::pair<std::string,bool>> Register(
-                                 const std::string& query) {
+  std::optional<std::pair<std::string, bool>> Register(
+      const __NR_STRING_COMPAT_REF query) {
     if (query.empty())
       return std::nullopt;
 
-    if (nvm::strings::utility::IsWhitespaceString(query))
+    if (nvm::strings::utility::IsWhitespaceString(
+            __NR_CALL_STRING_COMPAT_REF(query)))
       return std::nullopt;
 
-    auto key = hash_fn_(query);
+    auto key = hash_fn_(__NR_CALL_STRING_COMPAT_REF(query));
     auto key_str = GenerateKey(key);
     if (IsKeyExist(key_str))
-      return __NR_RETURN_MOVE(std::make_pair(key_str,false));
+      return __NR_RETURN_MOVE(std::make_pair(key_str, false));
 
     statements_.emplace(
-        key_str, std::move(PreparedStatementItem(
-                 key_str, std::string(std::to_string(key)), std::string(query),
-                 nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-    return __NR_RETURN_MOVE(std::make_pair(key_str,true));
+        key_str,
+        std::move(PreparedStatementItem(
+            key_str, std::string(std::to_string(key)), std::string(query),
+            nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
+    return __NR_RETURN_MOVE(std::make_pair(key_str, true));
   }
 
   // std::optional<size_t> Register(const std::string& name,
@@ -96,7 +100,6 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   //   return key;
   // }
 
-
   bool IsKeyExist(const std::string& statement_key) const {
     return statements_.contains(statement_key);
   }
@@ -115,7 +118,7 @@ class PreparedStatementManager : public std::enable_shared_from_this<PreparedSta
   std::hash<std::string> hash_fn_;
   absl::Mutex mutex_;
 
-  std::string GenerateKey(const size_t& hash) const{
+  std::string GenerateKey(const size_t& hash) const {
     return "nvql_" + std::to_string(hash);
   }
 };

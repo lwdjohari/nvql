@@ -24,10 +24,12 @@ class PgServer final : public StorageServer {
 
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
 
-  explicit PgServer(std::initializer_list<PgClusterConfig> clusters,
+  explicit PgServer(const std::string& name,
+                    std::initializer_list<PgClusterConfig> clusters,
                     uint16_t pool_min_worker = 5,
                     u_int16_t pool_max_worker = 10)
                   : StorageServer(),
+                    name_(std::string(name)),
                     configs_(CreateConfig(clusters, pool_min_worker,
                                           pool_max_worker)),
                     pools_(CreatePools()) {}
@@ -37,6 +39,10 @@ class PgServer final : public StorageServer {
 #endif
 
   ~PgServer() {}
+
+  const std::string& Name() const override {
+    return name_;
+  }
 
   bool TryConnect() override {
     pools_->Run();
@@ -76,13 +82,14 @@ class PgServer final : public StorageServer {
   }
 
   static PgServerPtr MakePgServer(
-      std::initializer_list<PgClusterConfig> clusters,
+      const std::string& name, std::initializer_list<PgClusterConfig> clusters,
       uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10) {
     return __NR_RETURN_MOVE(std::make_shared<postgres::PgServer>(
-        clusters, pool_min_worker, pool_max_worker));
+        name, clusters, pool_min_worker, pool_max_worker));
   }
 
  private:
+  std::string name_;
   PgStorageConfig configs_;
   ConnectionPoolPtr pools_;
 
@@ -107,27 +114,29 @@ class PgServer final : public StorageServer {
   }
 
   ConnectionPoolPtr CreatePools() {
-    auto pools = std::make_shared<ConnectionPool>(configs_);
+    auto pools = std::make_shared<ConnectionPool>(name_, configs_);
     pools_->SetPrimaryConnectionCallback(PgServer::CreatePrimaryPgConnection);
     pools_->SetStandbyConnectionCallback(PgServer::CreateStandbyPgConnection);
 
     return __NR_RETURN_MOVE(pools);
   }
 
-  static ConnectionPtr CreatePrimaryPgConnection(StorageConfig* config) {
+  static ConnectionPtr CreatePrimaryPgConnection(const std::string& name,
+                                                 StorageConfig* config) {
     if (!config)
       throw Exception("Config is null");
 
     auto conn = std::make_shared<PgConnection>(
-        config->ClusterConfigs(), ConnectionStandbyMode::Primary,
+        name, config->ClusterConfigs(), ConnectionStandbyMode::Primary,
         config->PoolConfig().ConnectionIdleWait());
 
     return __NR_RETURN_MOVE(conn);
   }
 
-  static ConnectionPtr CreateStandbyPgConnection(StorageConfig* config) {
+  static ConnectionPtr CreateStandbyPgConnection(const std::string& name,
+                                                 StorageConfig* config) {
     auto conn = std::make_shared<PgConnection>(
-        config->ClusterConfigs(), ConnectionStandbyMode::Standby,
+        name, config->ClusterConfigs(), ConnectionStandbyMode::Standby,
         config->PoolConfig().ConnectionIdleWait());
 
     return __NR_RETURN_MOVE(conn);

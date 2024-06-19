@@ -16,8 +16,8 @@
 // cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-typedef ConnectionPtr (*ConnectionCreatePrimaryCallback)(StorageConfig* config);
-typedef ConnectionPtr (*ConnectionCreateStandbyCallback)(StorageConfig* config);
+typedef ConnectionPtr (*ConnectionCreatePrimaryCallback)(const std::string& name, StorageConfig* config);
+typedef ConnectionPtr (*ConnectionCreateStandbyCallback)(const std::string& name,StorageConfig* config);
 
 namespace impl {
 class ConnectionPoolImpl {
@@ -31,24 +31,24 @@ class ConnectionPoolImpl {
 
   void Run(const ConnectionCreatePrimaryCallback callback) {
     {
-    absl::MutexLock lock(&mutex_main_);
-    if (is_run_)
-      return;
+      absl::MutexLock lock(&mutex_main_);
+      if (is_run_)
+        return;
 
-    if (!callback)
-      throw InvalidArgException(
-          "Null-reference on \"ConnectionCreateCallback callback\".");
-    is_run_ = true;
+      if (!callback)
+        throw InvalidArgException(
+            "Null-reference on \"ConnectionCreateCallback callback\".");
+      is_run_ = true;
 
-    auto min_conn = config_.PoolConfig().MinConnection();
-    for (size_t i = 0; i < min_conn; i++) {
-      connections_.push(std::move(callback(&config_)));
-      auto c = connections_.back();
-      c->Open();
-    }
+      auto min_conn = config_.PoolConfig().MinConnection();
+      for (size_t i = 0; i < min_conn; i++) {
+        connections_.push(std::move( callback("",&config_)));
+        auto c = connections_.back();
+        c->Open();
+      }
 
-    thread_ping_ = std::thread(&ConnectionPoolImpl::PingRunner, this);
-    thread_cleanup_ = std::thread(&ConnectionPoolImpl::CleanupRunner, this);
+      thread_ping_ = std::thread(&ConnectionPoolImpl::PingRunner, this);
+      thread_cleanup_ = std::thread(&ConnectionPoolImpl::CleanupRunner, this);
     }
     // Loop();
   }
@@ -70,8 +70,7 @@ class ConnectionPoolImpl {
       absl::MutexLock lock(&mutex_main_);
       if (!is_run_)
         return;
-    
-    
+
       is_run_ = false;
     }
 
@@ -145,20 +144,20 @@ class ConnectionPoolImpl {
 
   // To hold the thread because Run will be spawned
   // from new Thread (not main Thread)
-  //absl::Mutex mutex_runner_;
+  // absl::Mutex mutex_runner_;
 
   // To sync Cleanup routine running in Separate Thread and avoid
   // locking Acquire, Return, Stop routine
-  //absl::Mutex mutex_cleanup_;
+  // absl::Mutex mutex_cleanup_;
 
   // To sync PingServer routine running in Separate Thread
   // and avoid locking Acquire, Return, Stop routine
-  //absl::Mutex mutex_ping_;
+  // absl::Mutex mutex_ping_;
 
   absl::CondVar cv_main_;
-  //absl::CondVar cv_runner_;
-  //absl::CondVar cv_cleanup_;
-  //absl::CondVar cv_ping_;
+  // absl::CondVar cv_runner_;
+  // absl::CondVar cv_cleanup_;
+  // absl::CondVar cv_ping_;
 
   std::thread thread_cleanup_;
   std::thread thread_ping_;
@@ -193,7 +192,8 @@ class ConnectionPoolImpl {
     //     absl::Seconds(config_.PoolConfig().PingServerInterval().count());
     // while (true) {
     //   auto state = cv_ping_.WaitWithDeadline(&mutex_ping_,
-    //                                          absl::Now() + deadline_duration);
+    //                                          absl::Now() +
+    //                                          deadline_duration);
     //   if (!is_run_)
     //     break;
 
@@ -212,11 +212,15 @@ class ConnectionPoolImpl {
 class ConnectionPool {
  private:
  public:
-  explicit ConnectionPool(StorageConfig& config) : config_(config){};
+  explicit ConnectionPool(const std::string& name, StorageConfig& config)
+                  : name_(std::string(name)), config_(config){};
   virtual ~ConnectionPool() {
     Stop();
   }
 
+  const std::string& Name() const {
+    return name_;
+  }
   const ConnectionPoolConfig& Config() const {
     return config_.PoolConfig();
   }
@@ -233,7 +237,6 @@ class ConnectionPool {
   }
 
   // void Wait() {
-    
 
   //   if (thread_.joinable())
   //     thread_.join();
@@ -255,15 +258,12 @@ class ConnectionPool {
     create_secondary_connection_callback_ = nullptr;
   }
 
-
-
   void Stop() {
     {
       // absl::MutexLock lock(&mutex_main_);
       if (!is_run_)
         return;
-    
-    
+
       is_run_ = false;
     }
 
@@ -329,6 +329,7 @@ class ConnectionPool {
   }
 
  protected:
+  std::string name_;
   StorageConfig& config_;
   ConnectionCreatePrimaryCallback create_primary_connection_callback_;
   ConnectionCreateStandbyCallback create_secondary_connection_callback_;
@@ -341,20 +342,20 @@ class ConnectionPool {
 
   // To hold the thread because Run will be spawned
   // from new Thread (not main Thread)
-  //absl::Mutex mutex_runner_;
+  // absl::Mutex mutex_runner_;
 
   // To sync Cleanup routine running in Separate Thread and avoid
   // locking Acquire, Return, Stop routine
-  //absl::Mutex mutex_cleanup_;
+  // absl::Mutex mutex_cleanup_;
 
   // To sync PingServer routine running in Separate Thread
   // and avoid locking Acquire, Return, Stop routine
-  //absl::Mutex mutex_ping_;
+  // absl::Mutex mutex_ping_;
 
   absl::CondVar cv_main_;
-  //absl::CondVar cv_runner_;
-  //absl::CondVar cv_cleanup_;
-  //absl::CondVar cv_ping_;
+  // absl::CondVar cv_runner_;
+  // absl::CondVar cv_cleanup_;
+  // absl::CondVar cv_ping_;
 
   std::thread thread_cleanup_;
   std::thread thread_ping_;
@@ -365,32 +366,32 @@ class ConnectionPool {
 
   void RunImpl() {
     {
-    absl::MutexLock lock(&mutex_main_);
+      absl::MutexLock lock(&mutex_main_);
 
-    std::cout << "Initialize connections..."  << std::endl; 
+      std::cout << "Initialize connections..." << std::endl;
 
-    if (!create_primary_connection_callback_)
-      throw InvalidArgException(
-          "Null-reference on \"ConnectionCreateCallback callback\".");
-    is_run_ = true;
+      if (!create_primary_connection_callback_)
+        throw InvalidArgException(
+            "Null-reference on \"ConnectionCreateCallback callback\".");
+      is_run_ = true;
 
-    auto min_conn = config_.PoolConfig().MinConnection();
-    for (size_t i = 0; i < min_conn; i++) {
-      connections_.push(std::move(create_primary_connection_callback_(&config_)));
-      auto c = connections_.back();
-      c->Open();
+      auto min_conn = config_.PoolConfig().MinConnection();
+      for (size_t i = 0; i < min_conn; i++) {
+        connections_.push(
+            std::move(create_primary_connection_callback_(name_, &config_)));
+        auto c = connections_.back();
+        c->Open();
+      }
+
+      // thread_ping_ = std::thread(&ConnectionPoolImpl::PingRunner, this);
+      // thread_cleanup_ = std::thread(&ConnectionPoolImpl::CleanupRunner,
+      // this);
+      is_ready_ = true;
     }
+    cv_main_.SignalAll();
+    // std::cout << "Initialized..."  << std::endl;
 
-    // thread_ping_ = std::thread(&ConnectionPoolImpl::PingRunner, this);
-    // thread_cleanup_ = std::thread(&ConnectionPoolImpl::CleanupRunner, this);
-    is_ready_ = true;
-    
-}
-cv_main_.SignalAll();
-    // std::cout << "Initialized..."  << std::endl; 
-
-    
-    //Loop();
+    // Loop();
   }
 
   void Loop() {

@@ -14,9 +14,10 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 class PgConnection : public Connection {
  public:
   explicit PgConnection(
-      const ClusterConfigList& clusters, ConnectionStandbyMode standby_mode,
+      const std::string& name, const ClusterConfigList& clusters,
+      ConnectionStandbyMode standby_mode,
       std::chrono::seconds mark_idle_after = std::chrono::seconds(300))
-                  : Connection(StorageType::Postgres, standby_mode,
+                  : Connection(name, StorageType::Postgres, standby_mode,
                                mark_idle_after),
                     clusters_(clusters),
                     connection_string_(BuildConnectionString()),
@@ -81,18 +82,14 @@ class PgConnection : public Connection {
     return connection_string_;
   };
 
-  std::optional<std::pair<std::string,bool>> PrepareStatement(
+  std::optional<std::pair<std::string, bool>> PrepareStatement(
       __NR_STRING_COMPAT_REF query) override {
     if (!prepared_statement_manager_)
       throw NullReferenceException(
           "Null reference to PrepareStatemenManagerPtr "
           "in prepared_statement_manager_");
 
-#if __NR_CPP17
-    return prepared_statement_manager_->Register(query.data());
-#else
     return prepared_statement_manager_->Register(query);
-#endif
   }
 
   pqxx::connection* Driver() {
@@ -105,7 +102,7 @@ class PgConnection : public Connection {
       throw ConnectionException("Connection already created",
                                 StorageType::Postgres);
     try {
-      //std::cout << "Connection string:" << connection_string_ << std::endl;
+      // std::cout << "Connection string:" << connection_string_ << std::endl;
 
       conn_ = std::make_unique<pqxx::connection>(connection_string_);
 
@@ -166,10 +163,10 @@ class PgConnection : public Connection {
     std::ostringstream ss;
     ss << "{" << ToStringEnumStorageType(type_) << " | "
        << std::to_string(nvm::utils::RandomizeUint32t()) << "}";
-       //<< std::to_string(nvm::utils::RandomizeUint32t());
+       
     auto feed = ss.str();
     auto hash_key = hash_fn_(feed);
-    //std::cout << "Connection Hash Key:" << hash_key << " (from:\"" << feed <<"\")" << std::endl;
+    
     return hash_key;
   }
 
@@ -182,10 +179,7 @@ class PgConnection : public Connection {
 
     uint16_t index = 0;
 
-    
-    for ( auto cluster : clusters_.Configs()) {
-      
-      //std::cout << "Config for: " << ToStringEnumStorageType( cluster->Type()) << std::endl;
+    for (auto cluster : clusters_.Configs()) {
       auto pg_cluster = std::dynamic_pointer_cast<PgClusterConfig>(cluster);
       if (index == 0) {
         host << "postgresql://" << std::string(pg_cluster->User()) << ":"
@@ -202,7 +196,8 @@ class PgConnection : public Connection {
       index++;
     }
 
-    host << "/" << dbname << "?application_name=nvql&connect_timeout=5";
+    host << "/" << dbname << "?application_name=" << name_ << "::nvql"
+         << "&connect_timeout=5";
 
     return __NR_RETURN_MOVE(host.str());
   }
