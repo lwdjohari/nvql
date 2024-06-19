@@ -47,7 +47,8 @@ int main() {
       return 0;
     }
 
-    for (const auto row : *result) {
+    auto cursor = Cursor(*result);
+    for (const auto row : cursor) {
       auto cust_id = row->As<int32_t>("cust_id");
       auto name = row->As<std::string>("name");
       auto member_type = row->As<std::string>("member_type");
