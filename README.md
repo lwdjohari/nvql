@@ -4,7 +4,8 @@
 Unified Data Layer Library for postgres, oracle, mysql &amp; sqlite database for C++ 14 &amp; 17.<br/>
 Consistent API across databases, high productivity, reusable and low overhead.<br/>
 All query executions are using prepared statement and NvQL handles it for you.<br/>
-Allthough we still give you ```ExecuteNonPrepared``` method for handling some certain case.
+
+Alltough we still give you ```ExecuteNonPrepared``` method for handling some certain case.
 
 ```NvQL``` is being developed primarily for hiqh productivity & reusable  efficient approach of c++ unified data layer library for NvServ, a rapid server framework.
 
