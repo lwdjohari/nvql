@@ -16,13 +16,13 @@ public:
   explicit ConnectionPoolConfig(
       int16_t min_connection, int16_t max_connection, bool keep_alive = true,
       std::chrono::seconds connection_timeout = std::chrono::seconds(5),
-      std::chrono::seconds ping_server_interval = std::chrono::seconds(120),
-      std::chrono::seconds connection_idle_wait = std::chrono::seconds(300),
+      std::chrono::seconds ping_server_interval = std::chrono::seconds(30),
+      std::chrono::seconds connection_idle_wait = std::chrono::seconds(120),
       std::chrono::seconds max_waiting_for_connection =
-          std::chrono::seconds(10),
+          std::chrono::seconds(5),
       std::chrono::seconds max_waiting_for_trans_creation =
-          std::chrono::seconds(10),
-      std::chrono::seconds cleanup_interval = std::chrono::seconds(120))
+          std::chrono::seconds(5),
+      std::chrono::seconds cleanup_interval = std::chrono::seconds(45))
       : min_connection_(min_connection),
         max_connection_(max_connection),
         keep_alive_(keep_alive),

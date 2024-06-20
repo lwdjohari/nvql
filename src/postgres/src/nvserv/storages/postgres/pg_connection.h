@@ -49,7 +49,7 @@ class PgConnection : public Connection {
   /// Different storage server has different implementations
   /// to guarantee the connection is keep-alive
   void PingServerAsync() override {
-    std::cout << "Ping Server";
+    std::cout << "Ping Server: " << GetHash() << std::endl;
   }
 
   virtual bool PingServer() override {
