@@ -25,7 +25,9 @@ class EventLoopExecutor {
   using Task = std::function<void()>;
 
   EventLoopExecutor() : stop_(false) {
+    absl::MutexLock lock(&mutex_);
     thread_ = std::thread(&EventLoopExecutor::RunLoop, this);
+    cond_var_.Wait(&mutex_);
   }
 
   ~EventLoopExecutor() {
@@ -56,6 +58,7 @@ class EventLoopExecutor {
   };
 
   void RunLoop() {
+    cond_var_.SignalAll();
     while (true) {
       std::vector<Task> tasks_to_run;
       std::vector<std::pair<absl::Time, TaskItem>> reschedule_tasks;
@@ -144,15 +147,13 @@ int main() {
                       EventLoopExecutor::TaskType::RunOnce,
                       absl::ZeroDuration());
 
-  executor.SubmitTask(
-      []() { std::cout << "Ping Service" << std::endl; },
-      EventLoopExecutor::TaskType::RunAtInterval, absl::Milliseconds(400),
-      absl::Milliseconds(200));
+  executor.SubmitTask([]() { std::cout << "Ping Service" << std::endl; },
+                      EventLoopExecutor::TaskType::RunAtInterval,
+                      absl::Milliseconds(400), absl::Milliseconds(200));
 
-  executor.SubmitTask(
-      []() { std::cout << "Cleaner Service" << std::endl; },
-      EventLoopExecutor::TaskType::RunAtInterval, absl::Milliseconds(400),
-      absl::Milliseconds(200));
+  executor.SubmitTask([]() { std::cout << "Cleaner Service" << std::endl; },
+                      EventLoopExecutor::TaskType::RunAtInterval,
+                      absl::Milliseconds(400), absl::Milliseconds(200));
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   return 0;
