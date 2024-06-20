@@ -27,7 +27,7 @@
 
 #include "nvserv/declare.h"
 #include "nvserv/global_macro.h"
-#include "nvserv/storages/config.h"
+#include "nvserv/storages/storage_config.h"
 #include "nvserv/storages/postgres/pg_cluster_config.h"
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)

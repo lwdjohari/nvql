@@ -41,18 +41,18 @@ class StorageServer : public components::Component {
   StorageServer(const components::ComponentLocator& locator,
                 const components::ComponentConfig& config,
                 components::ComponentType type)
-                  : components::Component(locator, config, type) {}
+                  : components::Component(locator, config, type)
 #endif
 
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
-  class StorageServer {
+                        class StorageServer {
    public:
-    StorageServer() {}
+    StorageServer();
 #endif
 
+    virtual ~StorageServer();
+
     virtual const std::string& Name() const = 0;
-      
-    virtual ~StorageServer(){};
 
     virtual const StorageConfig& Configs() const = 0;
 
@@ -70,7 +70,6 @@ class StorageServer : public components::Component {
     virtual ConnectionPoolPtr Pool() = 0;
 
     virtual StorageInfo GetStorageServerInfo() const = 0;
-    
   };
 
   NVSERV_END_NAMESPACE

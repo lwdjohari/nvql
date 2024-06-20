@@ -28,7 +28,7 @@
 #include "nvserv/global_macro.h"
 #include "nvserv/headers/absl_thread.h"
 #include "nvserv/storages/declare.h"
-#include "prepared_statement_manager.h"
+#include "nvserv/storages/prepared_statement_manager.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
@@ -91,91 +91,48 @@ class ConnectionBase {
   virtual PreparedStatementManagerPtr PreparedStatement() = 0;
 
  protected:
-  ConnectionBase(){};
+  ConnectionBase();
 };
 
 class Connection : public ConnectionBase {
  public:
-  StorageType Type() const override {
-    return type_;
-  }
+  StorageType Type() const override;
 
-  const std::string& Name() const override {
-    return name_;
-  }
+  const std::string& Name() const override;
 
   ///< Write state when when connection being acquired to pool
-  void Acquire() override {
-    absl::MutexLock lock(&mutex_);
-    acquired_ = nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time();
-  }
+  void Acquire() override;
 
   ///< Write state when when connection being returned to pool
-  void Returned() override {
-    absl::MutexLock lock(&mutex_);
-    returned_ = nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time();
-  }
+  void Returned() override;
 
   /// Return time when the Connection object was created
-  std::chrono::system_clock::time_point CreatedTime() const override {
-    return created_;
-  }
+  std::chrono::system_clock::time_point CreatedTime() const override;
 
   ///< Time when connection being acquired from pool
-  std::chrono::system_clock::time_point AcquiredTime() const override {
-    return acquired_;
-  }
+  std::chrono::system_clock::time_point AcquiredTime() const override;
 
   ///< Time  when connection being acquired from pool
-  std::chrono::system_clock::time_point ReturnedTime() const override {
-    return returned_;
-  }
+  std::chrono::system_clock::time_point ReturnedTime() const override;
 
-  PreparedStatementManagerPtr PreparedStatement() override {
-    return prepared_statement_manager_;
-  }
+  PreparedStatementManagerPtr PreparedStatement() override;
 
-  bool IsIdle() const override {
-    auto idle = IdleDuration();
-    return idle > mark_idle_after_ ? true : false;
-  }
+  bool IsIdle() const override;
 
   /// Duration since last usage
-  std::chrono::seconds IdleDuration() const override {
-    auto now = nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time();
-    return std::chrono::duration_cast<std::chrono::seconds>(now - returned_);
-  }
+  std::chrono::seconds IdleDuration() const override;
 
-  std::chrono::seconds IdleAfter() const override {
-    return mark_idle_after_;
-  }
+  std::chrono::seconds IdleAfter() const override;
 
-  std::chrono::system_clock::time_point LastPing() const override {
-    return last_ping_;
-  }
+  std::chrono::system_clock::time_point LastPing() const override;
 
-  ConnectionStandbyMode StandbyMode() const override {
-    return standby_mode_;
-  }
+  ConnectionStandbyMode StandbyMode() const override;
 
  protected:
   explicit Connection(
       const std::string& name, StorageType type,
       ConnectionStandbyMode standby_mode,
-      std::chrono::seconds mark_idle_after = std::chrono::seconds(300))
-                  : ConnectionBase(),
-                    name_(std::string(name)),
-                    prepared_statement_manager_(
-                        std::make_shared<PreparedStatementManager>()),
-                    created_(nvm::dates::DateTime::UtcNow()
-                                 .TzTime()
-                                 ->get_sys_time()),
-                    acquired_(created_),
-                    returned_(created_),
-                    last_ping_(created_),
-                    mark_idle_after_(mark_idle_after),
-                    type_(type),
-                    standby_mode_(standby_mode) {}
+      std::chrono::seconds mark_idle_after = std::chrono::seconds(300));
 
   std::string name_;
   mutable absl::Mutex mutex_;

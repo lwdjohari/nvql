@@ -19,28 +19,32 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/row_result.h"
 
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
-
-#include "nvserv/global_macro.h"
-
+// cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
- public:
-  virtual ~Column();
+RowResult::RowResult() {}
 
-  virtual std::string Name() const;
+std::optional<Column> RowResult::GetColumn(
+    const std::string& column_name) const {
+  return std::nullopt;
+}
 
- protected:
-  Column();
-};
+std::optional<Column> RowResult::GetColumn(const size_t& index) const {
+  return std::nullopt;
+}
+
+size_t RowResult::Size() const {
+  throw std::runtime_error("Implement RowResult::Size() on derrived class");
+}
+
+// ColumnIterator RowResult::begin() const {
+//     return ColumnIterator(row_, 0);
+// }
+
+// ColumnIterator RowResult::end() const {
+//     return ColumnIterator(row_, row_.size());
+// }
 
 NVSERV_END_NAMESPACE

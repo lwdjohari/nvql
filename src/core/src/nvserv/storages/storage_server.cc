@@ -19,28 +19,23 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/storage_server.h"
 
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
-
-#include "nvserv/global_macro.h"
-
+// cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
- public:
-  virtual ~Column();
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 0
 
-  virtual std::string Name() const;
+StorageServer::StorageServer(const components::ComponentLocator& locator,
+                             const components::ComponentConfig& config,
+                             components::ComponentType type)
+                : components::Component(locator, config, type) {}
+#endif
 
- protected:
-  Column();
-};
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
+StorageServer::StorageServer() {}
+#endif
+
+StorageServer::~StorageServer(){};
 
 NVSERV_END_NAMESPACE

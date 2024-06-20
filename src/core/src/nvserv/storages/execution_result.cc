@@ -19,28 +19,43 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/execution_result.h"
 
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
-
-#include "nvserv/global_macro.h"
-
+// cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
- public:
-  virtual ~Column();
+ExecutionResult::ExecutionResult(StorageType type) : type_(type) {}
+ExecutionResult::~ExecutionResult() = default;
 
-  virtual std::string Name() const;
+StorageType ExecutionResult::Type() const {
+  return type_;
+}
 
- protected:
-  Column();
-};
+Cursor::Cursor(const ExecutionResult& exec_result)
+                : exec_result_(exec_result) {}
+
+Cursor::Iterator::Iterator(std::unique_ptr<RowResultIterator> iter)
+                : iter_(std::move(iter)) {}
+
+Cursor::Iterator& Cursor::Iterator::operator++() {
+  ++(*iter_);
+  return *this;
+}
+
+bool Cursor::Iterator::operator!=(const Iterator& other) const {
+  return *iter_ != *(other.iter_);
+}
+
+RowResultPtr Cursor::Iterator::operator*() const {
+  return **iter_;
+}
+
+Cursor::Iterator Cursor::begin() const {
+  return Iterator(exec_result_.begin());
+}
+
+Cursor::Iterator Cursor::end() const {
+  return Iterator(exec_result_.end());
+}
 
 NVSERV_END_NAMESPACE

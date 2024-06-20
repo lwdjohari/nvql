@@ -21,26 +21,49 @@
 
 #pragma once
 
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
+#include <nvm/types/type_utility.h>
+
+#include <ostream>
 
 #include "nvserv/global_macro.h"
+#include "nvserv/storages/declare.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
+class ClusterConfigList {
  public:
-  virtual ~Column();
+  explicit ClusterConfigList(StorageType type);
 
-  virtual std::string Name() const;
+  template <typename T>
+  void Add(T&& config);
+
+  const ClusterConfigListType & Configs() const;
+
+  ClusterConfigListType & Configs();
+  size_t Size() const;
+
+  StorageType Type() const;
+  
 
  protected:
-  Column();
+  ClusterConfigListType configs_;
+  StorageType type_;
 };
+
+
+template <typename T>
+  void ClusterConfigList::Add(T&& config) {
+    using namespace nvm::types::utility;
+
+    static_assert(is_has_base_of_v<T, ClusterConfig>,
+                  "Type must be derrived type from \"ClusterConfig\"");
+
+    if (config.Type() != type_)
+      throw std::invalid_argument(
+          "ClusterConfigList is set to only accept StorageType = " +
+          ToStringEnumStorageType(type_));
+
+    configs_.push_back(std::make_shared<T>(std::forward<T>(config)));
+  };
 
 NVSERV_END_NAMESPACE

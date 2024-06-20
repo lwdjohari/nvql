@@ -42,27 +42,15 @@ class PreparedStatementItem {
   explicit PreparedStatementItem(
       const std::string& statement_key, const std::string& name,
       const std::string& query,
-      const std::chrono::system_clock::time_point& created)
-                  : statement_key_(std::string(statement_key)),
-                    name_(name),
-                    query_(std::string(query)),
-                    created_time_(
-                        std::chrono::system_clock::time_point(created)) {}
-  __NR_STRING_COMPAT_REF Query() const {
-    return query_;
-  }
+      const std::chrono::system_clock::time_point& created);
 
-  const std::string& Name() const {
-    return name_;
-  }
+  __NR_STRING_COMPAT_REF Query() const;
 
-  const std::string& Key() const {
-    return statement_key_;
-  }
+  const std::string& Name() const;
 
-  std::chrono::system_clock::time_point CreatedTime() const {
-    return created_time_;
-  }
+  const std::string& Key() const;
+
+  std::chrono::system_clock::time_point CreatedTime() const;
 
  private:
   std::string statement_key_;
@@ -76,72 +64,24 @@ class PreparedStatementItem {
 class PreparedStatementManager : public std::enable_shared_from_this<
                                      PreparedStatementManager> {
  public:
-  PreparedStatementManager(){};
-  ~PreparedStatementManager(){};
+  PreparedStatementManager();
+  ~PreparedStatementManager();
 
   std::optional<std::pair<std::string, bool>> Register(
-      const __NR_STRING_COMPAT_REF query) {
-    if (query.empty())
-      return std::nullopt;
+      const __NR_STRING_COMPAT_REF query);
 
-    if (nvm::strings::utility::IsWhitespaceString(
-            __NR_CALL_STRING_COMPAT_REF(query)))
-      return std::nullopt;
+  bool IsKeyExist(const std::string& statement_key) const;
 
-    auto key = hash_fn_(__NR_CALL_STRING_COMPAT_REF(query));
-    auto key_str = GenerateKey(key);
-    if (IsKeyExist(key_str))
-      return __NR_RETURN_MOVE(std::make_pair(key_str, false));
+  bool IsQueryExist(const std::string& query) const;
 
-    statements_.emplace(
-        key_str,
-        std::move(PreparedStatementItem(
-            key_str, std::string(std::to_string(key)), std::string(query),
-            nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-    return __NR_RETURN_MOVE(std::make_pair(key_str, true));
-  }
-
-  // std::optional<size_t> Register(const std::string& name,
-  //                                const std::string& query) {
-  //   if (query.empty())
-  //     return std::nullopt;
-
-  //   if (nvm::strings::utility::IsWhitespaceString(query))
-  //     return std::nullopt;
-
-  //   auto key = hash_fn_(query);
-
-  //   if (IsKeyExist(GenerateKey(key)))
-  //     return false;
-
-  //   statements_.emplace(
-  //       key_str, std::move(PreparedStatementItem(
-  //                key_str, std::string(name), std::string(query),
-  //                nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-  //   return key;
-  // }
-
-  bool IsKeyExist(const std::string& statement_key) const {
-    return statements_.contains(statement_key);
-  }
-
-  bool IsQueryExist(const std::string& query) const {
-    auto key = hash_fn_(query);
-    return IsKeyExist(GenerateKey(key));
-  }
-
-  PreparedStatementManagerPtr Share() {
-    return this->shared_from_this();
-  }
+  PreparedStatementManagerPtr Share();
 
  private:
   absl::node_hash_map<std::string, PreparedStatementItem> statements_;
   std::hash<std::string> hash_fn_;
   absl::Mutex mutex_;
 
-  std::string GenerateKey(const size_t& hash) const {
-    return "nvql_" + std::to_string(hash);
-  }
+  std::string GenerateKey(const size_t& hash) const;
 };
 
 NVSERV_END_NAMESPACE

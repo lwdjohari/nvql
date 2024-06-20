@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "nvserv/storages/config.h"
+#include "nvserv/storages/storage_config.h"
 #include "nvserv/storages/connection_pool.h"
 #include "nvserv/storages/postgres/declare.h"
 #include "nvserv/storages/postgres/pg_cluster_config.h"

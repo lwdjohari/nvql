@@ -19,28 +19,10 @@
  *  limitations under the License.
  */
 
-#pragma once
-
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
-
-#include "nvserv/global_macro.h"
+#include "nvserv/storages/row_result_iterator.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
- public:
-  virtual ~Column();
-
-  virtual std::string Name() const;
-
- protected:
-  Column();
-};
+RowResultIterator::~RowResultIterator() = default;
 
 NVSERV_END_NAMESPACE

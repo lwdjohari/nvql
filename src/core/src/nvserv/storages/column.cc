@@ -19,28 +19,17 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/column.h"
 
-#include <any>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
-
-#include "nvserv/global_macro.h"
-
+// cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-class Column {
- public:
-  virtual ~Column();
+Column::Column() = default;
 
-  virtual std::string Name() const;
+Column::~Column() = default;
 
- protected:
-  Column();
+std::string Column::Name() const {
+  return std::string();
 };
 
 NVSERV_END_NAMESPACE
