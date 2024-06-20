@@ -64,6 +64,12 @@ void ParamsTest() {
   std::cout << "Param Size: " << sizeof(utc) << "\n" << std::endl;
 }
 
+struct User {
+  int32_t user_id;
+  std::string username;
+  int16_t status;
+};
+
 int main() {
   ParamsTest();
 
@@ -88,85 +94,95 @@ int main() {
     server->TryConnect();
     std::cout << "Connect time: " << sw.ElapsedMilliseconds() << "ms\n"
               << std::endl;
+    {
+      auto transact_mode = TransactionMode::ReadOnly;
+      std::cout << "Create DB Transaction: "
+                << ToStringEnumTransactionMode(transact_mode) << std::endl;
 
-    auto transact_mode = TransactionMode::ReadOnly;
-    std::cout << "Create DB Transaction: "
-              << ToStringEnumTransactionMode(transact_mode) << std::endl;
+      sw.Reset();
+      auto tx = server->Begin(transact_mode);
 
-    sw.Reset();
-    auto tx = server->Begin(transact_mode);
+      std::cout << "Transaction Creation: " << sw.ElapsedMilliseconds()
+                << "ms\n"
+                << std::endl;
+      sw.Reset();
 
-    std::cout << "Transaction Creation: " << sw.ElapsedMilliseconds() << "ms\n"
-              << std::endl;
-    sw.Reset();
+      std::string query = "select * from users u inner join company c \n"
+                          "on u.company_id = c.company_id \n"
+                          "where u.status = $1 and u.user_id = $2";
+      std::cout << "Prepare SQL Query statement: \n"
+                << query << "\n"
+                << std::endl;
 
-    std::string query = "select * from users u inner join company c \n"
-                        "on u.company_id = c.company_id \n"
-                        "where u.status = $1 and u.user_id = $2";
-    std::cout << "Prepare SQL Query statement: \n"
-              << query << "\n"
-              << std::endl;
+      auto status_filter = Param::SmallInt(1);
+      auto user_id_filter = Param::Int(2);
 
-    auto status_filter = Param::SmallInt(1);
-    auto user_id_filter = Param::Int(2);
+      nvm::Stopwatch swt;
+      for (size_t i = 0; i < 10; i++) {
+        ExecutionResultPtr result =
+            tx->ExecuteNonPrepared(query, {status_filter, user_id_filter});
 
-    nvm::Stopwatch swt;
-    for (size_t i = 0; i < 10; i++) {
-      ExecutionResultPtr result =
-          tx->ExecuteNonPrepared(query, {status_filter, user_id_filter});
+        if (result->Empty()) {
+          std::cout << "No customers data.." << std::endl;
+          server->Shutdown();
+          return 0;
+        }
 
-      if (result->Empty()) {
-        std::cout << "No customers data.." << std::endl;
-        server->Shutdown();
-        return 0;
+        auto cursor = Cursor(*result);
+        for (const auto row : cursor) {
+          auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+              row, {"user_id", "username", "status"});
+
+          auto u = Mapper::Map<User, typeof(dyn)>(dyn);
+
+          auto cust_id = u.user_id;  // row->As<int32_t>("user_id");
+          auto name = u.username;    // row->As<std::string>("username");
+          auto status = u.status;    // row->As<int16_t>("status");
+
+          std::cout << name << " {id: " << cust_id << "; status: " << status
+                    << "; query time non-prepared: "
+                    << swt.ElapsedMilliseconds() << "ms;}" << std::endl;
+
+          swt.Reset();
+        }
       }
 
-      auto cursor = Cursor(*result);
-      for (const auto row : cursor) {
-        auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
-            row, {"user_id", "username", "status"});
+      std::cout << "\nQuery Execution Non Prepared Total time: "
+                << sw.ElapsedMilliseconds() << "ms" << "\n"
+                << std::endl;
+      sw.Reset();
 
-        auto cust_id = std::get<0>(dyn);  // row->As<int32_t>("user_id");
-        auto name = std::get<1>(dyn);     // row->As<std::string>("username");
-        auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
+      for (size_t i = 0; i < 10; i++) {
+        ExecutionResultPtr result =
+            tx->Execute(query, {status_filter, user_id_filter});
 
-        std::cout << name << " {id: " << cust_id << "; status: " << status
-                  << "; query time non-prepared: " << swt.ElapsedMilliseconds() << "ms;}"
-                  << std::endl;
+        if (result->Empty()) {
+          std::cout << "No customers data.." << std::endl;
+          server->Shutdown();
+          return 0;
+        }
 
-        swt.Reset();
+        auto cursor = Cursor(*result);
+        for (const auto row : cursor) {
+          auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+              row, {"user_id", "username", "status"});
+
+          auto cust_id = std::get<0>(dyn);  // row->As<int32_t>("user_id");
+          auto name = std::get<1>(dyn);     // row->As<std::string>("username");
+          auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
+
+          std::cout << name << " {id: " << cust_id << "; status: " << status
+                    << "; query time prepared: " << swt.ElapsedMilliseconds()
+                    << "ms;}" << std::endl;
+
+          swt.Reset();
+        }
       }
+
+      std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
+                << "ms" << std::endl;
     }
-
-    for (size_t i = 0; i < 10; i++) {
-      ExecutionResultPtr result =
-          tx->Execute(query, {status_filter, user_id_filter});
-
-      if (result->Empty()) {
-        std::cout << "No customers data.." << std::endl;
-        server->Shutdown();
-        return 0;
-      }
-
-      auto cursor = Cursor(*result);
-      for (const auto row : cursor) {
-        auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
-            row, {"user_id", "username", "status"});
-
-        auto cust_id = std::get<0>(dyn);  // row->As<int32_t>("user_id");
-        auto name = std::get<1>(dyn);     // row->As<std::string>("username");
-        auto status = std::get<2>(dyn);   // row->As<int16_t>("status");
-
-        std::cout << name << " {id: " << cust_id << "; status: " << status
-                  << "; query time prepared: " << swt.ElapsedMilliseconds() << "ms;}"
-                  << std::endl;
-
-        swt.Reset();
-      }
-    }
-
-    std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
-              << "ms" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(60));
     server->Shutdown();
   } catch (const StorageException& e) {
     std::cerr << e.what() << '\n';
