@@ -180,9 +180,14 @@ int main() {
       }
 
       std::cout << "\nQuery Execution Total time: " << sw.ElapsedMilliseconds()
-                << "ms" << std::endl;
+                << "ms\n" << std::endl;
     }
+
+    // simulate server running
+    // testing the ping & cleaner interval tasks
     std::this_thread::sleep_for(std::chrono::seconds(60));
+    std::cout << std::endl;
+    
     server->Shutdown();
   } catch (const StorageException& e) {
     std::cerr << e.what() << '\n';
