@@ -79,7 +79,8 @@ int main() {
 
 ### Tuple binding support
 
-NvQL have tuple binding support out-of-the-box
+NvQL have tuple binding support out-of-the-box.<br/>
+We dont recommend to use it at for-range-loop iteration position, because it hinder code clarity.
 
 ```Mapper::Dynamic<T...>()``` can also be use for casting to another type directly.
 
@@ -98,6 +99,41 @@ auto status = std::get<2>(dyn);
 std::cout << name << " {id: " << cust_id << "; status: " << status
           << "; query time: ";}"
           << std::endl;
+}
+
+```
+
+### Struct Binding/Mapping Support
+
+NvQL has feature to directly map the tuple from ```Mapper::Dynamic<T...>```<br/>
+directly to struct with requirement for mapping:
+- The order of type between struct & tuple MUST be match.
+- Incase of unmatched type will be fine IF the type can be implicitly casting.
+- Other than state previouly will throw an exceptions.
+
+```cpp
+
+struct User {
+  int32_t user_id;
+  std::string username;
+  int16_t status;
+};
+
+auto cursor = Cursor(*result);
+for (const auto row : cursor) {
+  auto dyn = Mapper::Dynamic<int32_t, std::string, int16_t>(
+    row, {"user_id", "username", "status"});
+
+  auto u = Mapper::Map<User, typeof(dyn)>(dyn);
+
+  auto cust_id = u.user_id;
+  auto name = u.username;
+  auto status = u.status;
+
+  std::cout << name << " {id: " << cust_id << "; status: " << status
+            << ";" << std::endl;
+
+}
 
 ```
 
@@ -121,7 +157,7 @@ std::cout << name << " {id: " << cust_id << "; status: " << status
 When using standalone library from this repo.
 The root name is same with root namespace from NvServ
 
-NvQL Namespace<br/>
+<b>NvQL Namespace</b><br/>
 NvQL was developed as part of NvServ so to retain interoperability<br/> 
 between standalone & nvserv, NvQL still keep the namespace of nvserv
 
