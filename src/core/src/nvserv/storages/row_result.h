@@ -23,7 +23,6 @@
 
 #include <memory>
 #include <optional>
-#include <pqxx/pqxx>
 #include <stdexcept>
 #include <type_traits>
 #include <vector>
