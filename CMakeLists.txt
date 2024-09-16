@@ -12,8 +12,6 @@ set(NVQL_LIB_NAME "nvserv")
 option(NVQL_FEATURE_POSTGRES "Use NVQL postgres datalayer" ON)
 option(NVQL_STANDALONE "Use NVQL Standalone separate from nvserv" ON)
 
-
-
 include(ProjectCXX)
 set(ISROOT FALSE)
 set(CXX_FEATURE "")
@@ -30,8 +28,8 @@ if(ISROOT)
     option(NVSERV_CXX_STANDARD_REQUIRED "CXX Required" ON)
     option(NVSERV_CXX_EXTENSIONS "CXX Extensions" ON)
     NV_PROPOGATE_CXX_OPTIONS(${NVSERV_CXX_VERSION} ${NVSERV_CXX_STANDARD_REQUIRED} ${NVSERV_CXX_EXTENSIONS})
-
-
+else()
+    set(NVQL_STANDALONE OFF)
 endif()
 
 NV_GET_CXX_STD_FEATURE(${NVSERV_CXX_VERSION} CXX_FEATURE)
@@ -54,11 +52,21 @@ message(STATUS "Compile Flags: ${NVQL_FEATURES_JOIN}")
 
 # nvql::postgres
 
-if(NVQL_STANDALONE)
+if(NOT nvcore_FOUND)
+    message(STATUS "Nvql lib nvcore: Initialize NvCore lib.")
     add_subdirectory(src/core/ build-nvserv_core)
+else()
+    message(STATUS "Nvql lib nvcore: Abseil lib are already set, use ABSL from project.")
+endif()
+
+
+if (TARGET absl::base)
+    message(STATUS "Nvql lib ABSL: Abseil lib are already set, use ABSL from project.")
+else ()
+    message(STATUS "Nvql lib ABSL: initialize Abseil lib.")
     set(ABSL_PROPAGATE_CXX_STD ON)
     add_subdirectory(deps/abseil-lts20230125.1 build-abseil)
-endif(NVQL_STANDALONE)
+endif ()
 
 if(NVQL_FEATURE_POSTGRES)
   add_subdirectory(src/postgres/ build-nvserv_postgres)
