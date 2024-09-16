@@ -38,7 +38,6 @@ message(STATUS "CXX Feature: ${CXX_FEATURE}")
 set(NVQL_FEATURE_DEFINITION)
 if(NVQL_STANDALONE)
     #nvserv-core
-    add_subdirectory(deps/nvcore/ build-nvcore)
     LIST(APPEND NVQL_FEATURE_DEFINITION NVQL_STANDALONE=1)
 else()
     LIST(APPEND NVQL_FEATURE_DEFINITION NVQL_STANDALONE=0)
@@ -54,11 +53,12 @@ message(STATUS "Compile Flags: ${NVQL_FEATURES_JOIN}")
 
 if(NOT nvcore_FOUND)
     message(STATUS "Nvql lib nvcore: Initialize NvCore lib.")
-    add_subdirectory(src/core/ build-nvserv_core)
+    add_subdirectory(deps/nvcore/ build-nvcore)
 else()
-    message(STATUS "Nvql lib nvcore: Abseil lib are already set, use ABSL from project.")
+    message(STATUS "Nvql lib nvcore: nvcore lib are already set, use nvcore from project.")
 endif()
 
+add_subdirectory(src/core/ build-nvserv_core)
 
 if (TARGET absl::base)
     message(STATUS "Nvql lib ABSL: Abseil lib are already set, use ABSL from project.")
