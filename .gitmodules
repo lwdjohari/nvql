@@ -4,7 +4,6 @@
 [submodule "deps/pqxx-v7"]
 	path = deps/pqxx-v7
 	url = https://github.com/jtv/libpqxx.git
-[submodule "deps/abseil-lts20230125.1"]
-	path = deps/abseil-lts20230125.1
-	url = https://github.com/abseil/abseil-cpp.git
-	branch = lts_2023_01_25
+[submodule "deps/nvserv-core"]
+	path = deps/nvserv-core
+	url = https://github.com/lwdjohari/nvserv-core.git
