@@ -58,19 +58,30 @@ else()
     message(STATUS "Nvql lib nvcore: nvcore lib are already set, use nvcore from project.")
 endif()
 
-add_subdirectory(src/core/ build-nvserv_core)
+
 
 if (TARGET absl::base)
     message(STATUS "Nvql lib ABSL: Abseil lib are already set, use ABSL from project.")
 else ()
     message(STATUS "Nvql lib ABSL: initialize Abseil lib.")
     set(ABSL_PROPAGATE_CXX_STD ON)
-    add_subdirectory(deps/abseil-lts20230125.1 build-abseil)
+    add_subdirectory(deps/nvserv-core/deps/abseil-lts20230125.1 build-abseil)
 endif ()
+
+if (TARGET nvserv::core)
+    message(STATUS "Nvserv::core: nvserv::core are already set, use nvserv from project.")
+else()
+    message(STATUS "Nvserv::core: initialize nvserv::core.")
+    add_subdirectory(deps/nvserv-core/ build-nvserv_core)
+endif()
+
+add_subdirectory(src/storage/ build-nvserv_storage)
 
 if(NVQL_FEATURE_POSTGRES)
   add_subdirectory(src/postgres/ build-nvserv_postgres)
 endif()
+
+
 
 
 add_executable(${PROJECT_NAME}_runner src/main.cc)

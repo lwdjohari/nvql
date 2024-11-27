@@ -24,7 +24,6 @@
 #include <nvm/types/type_utility.h>
 
 #include <ostream>
-
 #include "nvserv/global_macro.h"
 #include "nvserv/storages/declare.h"
 

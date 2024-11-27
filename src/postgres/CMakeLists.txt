@@ -21,6 +21,7 @@ add_library(${PROJECT_NAME}_postgres STATIC ${SOURCES_NVSERV_PG} )
 target_link_libraries(${PROJECT_NAME}_postgres  
     PUBLIC
         ${PROJECT_NAME}::core 
+        ${PROJECT_NAME}::storage 
         pqxx
     )
 
