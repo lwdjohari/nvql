@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include "nvserv/storages/storage_config.h"
 #include "nvserv/storages/connection_pool.h"
 #include "nvserv/storages/postgres/declare.h"
 #include "nvserv/storages/postgres/pg_cluster_config.h"
 #include "nvserv/storages/postgres/pg_connection.h"
 #include "nvserv/storages/postgres/pg_storage_config.h"
 #include "nvserv/storages/postgres/pg_transaction.h"
+#include "nvserv/storages/storage_config.h"
 #include "nvserv/storages/storage_server.h"
 #include "nvserv/storages/transaction.h"
 
@@ -35,16 +35,18 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgServer final : public StorageServer {
  public:
-#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 0
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
   explicit PgServer(const components::ComponentLocator& locator,
                     const components::ComponentConfig& config)
                   : StorageServer(locator, config,
                                   components::ComponentType::kPostgresFeature),
-                    configs_(storages::StorageType::Postgres) {}
+                    configs_(CreateConfig(clusters, pool_min_worker,
+                                          pool_max_worker)),
+                    pools_(CreatePools()) {}
 #endif
 
-#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
 
+#if  defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   explicit PgServer(const std::string& name,
                     std::initializer_list<PgClusterConfig> clusters,
                     uint16_t pool_min_worker = 5,
@@ -57,6 +59,7 @@ class PgServer final : public StorageServer {
 
   // explicit PgServer(const PgStorageConfig& config)
   //                 : StorageServer(), configs_(config) {}
+
 #endif
 
   ~PgServer() {}
@@ -102,12 +105,30 @@ class PgServer final : public StorageServer {
     return StorageInfo();
   }
 
+/**
+ *  If nvql as part of nvserv lib, we must passing it to Configurator Service 
+ *  NVQL_STANDALONE=0
+ */
+
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+  static PgServerPtr MakePgServer(
+      const std::string& name, std::initializer_list<PgClusterConfig> clusters,
+      uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10);
+#endif
+
+/**
+ *  If as nvql lib passing the configuration directly
+ *  NVQL_STANDALONE=0
+ */
+
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   static PgServerPtr MakePgServer(
       const std::string& name, std::initializer_list<PgClusterConfig> clusters,
       uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10) {
     return __NR_RETURN_MOVE(std::make_shared<postgres::PgServer>(
         name, clusters, pool_min_worker, pool_max_worker));
   }
+#endif
 
  private:
   std::string name_;

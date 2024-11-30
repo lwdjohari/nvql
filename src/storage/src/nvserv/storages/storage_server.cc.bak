@@ -24,7 +24,7 @@
 // cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 0
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
 
 StorageServer::StorageServer(const components::ComponentLocator& locator,
                              const components::ComponentConfig& config,
