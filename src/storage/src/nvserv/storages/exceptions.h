@@ -21,20 +21,18 @@
 
 #pragma once
 
+#include "nvserv/exceptions.h"
 #include "nvserv/global_macro.h"
 #include "nvserv/storages/declare.h"
-#include "nvserv/exceptions.h"
 
 NVSERV_BEGIN_NAMESPACE(storages)
 
 class StorageException : public Exception {
  public:
-  explicit StorageException(const std::string& message, const StorageType& type)
-                  : Exception(message), type_(StorageType(type)) {}
+  explicit StorageException(const std::string& message,
+                            const StorageType& type);
 
-  const StorageType& Type() const {
-    return type_;
-  }
+  const StorageType& Type() const;
 
  private:
   StorageType type_;
@@ -43,43 +41,37 @@ class StorageException : public Exception {
 class ConnectionException : public StorageException {
  public:
   explicit ConnectionException(const std::string& message,
-                               const StorageType& type)
-                  : StorageException(message, type) {}
+                               const StorageType& type);
 };
 
-class TransactionException : StorageException {
+class TransactionException : public StorageException {
  public:
   explicit TransactionException(const std::string& message,
-                                const StorageType& type)
-                  : StorageException(message, type) {}
+                                const StorageType& type);
 };
 
-class ExecutionException : TransactionException {
+class ExecutionException : public TransactionException {
  public:
   explicit ExecutionException(const std::string& message,
-                              const StorageType& type)
-                  : TransactionException(message, type) {}
+                              const StorageType& type);
 };
 
-class InternalErrorException : StorageException {
+class InternalErrorException : public StorageException {
  public:
   explicit InternalErrorException(const std::string& message,
-                                  const StorageType& type)
-                  : StorageException(message, type) {}
+                                  const StorageType& type);
 };
 
-class ParameterTypeException : StorageException {
+class ParameterTypeException : public StorageException {
  public:
   explicit ParameterTypeException(const std::string& message,
-                                  const StorageType& type)
-                  : StorageException(message, type) {}
+                                  const StorageType& type);
 };
 
 class UnsupportedFeatureException : StorageException {
  public:
   explicit UnsupportedFeatureException(const std::string& message,
-                                       const StorageType& type)
-                  : StorageException(message, type) {}
+                                       const StorageType& type);
 };
 
 NVSERV_END_NAMESPACE

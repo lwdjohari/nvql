@@ -30,11 +30,9 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
 class PgColumn : public Column {
  public:
-  explicit PgColumn(const pqxx::field& field) : field_(field) {}
+  explicit PgColumn(const pqxx::field& field) ;
 
-  std::string Name() const override {
-    return field_.name();
-  }
+  std::string Name() const override;
 
  protected:
  private:

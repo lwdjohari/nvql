@@ -19,20 +19,20 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/postgres/pg_storage_config.h"
 
-#include <chrono>
-#include <string>
+NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
-#include "nvserv/global_macro.h"
-
-// cppcheck-suppress unknownMacro
-NVSERV_BEGIN_NAMESPACE(storages::postgres::helper)
-
-std::chrono::system_clock::time_point ParseTimestamp(
-    const std::string& timestamp);
-
-std::chrono::system_clock::time_point ParseTimestampz(
-    const std::string& timestamp);
+PgStorageConfig::PgStorageConfig(ClusterConfigList&& cluster_config,
+                                 ConnectionPoolConfig&& pool_config)
+                : StorageConfig(
+                      StorageType::Postgres,
+                      TransactionMode::ReadCommitted |
+                          TransactionMode::ReadOnly |
+                          TransactionMode::ReadWrite,
+                      true, std::forward<ConnectionPoolConfig>(pool_config),
+                      TaskPoolMode::Internal, nullptr,
+                      ConnectionMode::ServerCluster,
+                      std::forward<ClusterConfigList>(cluster_config)) {}
 
 NVSERV_END_NAMESPACE

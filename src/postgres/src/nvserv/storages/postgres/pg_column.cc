@@ -19,20 +19,14 @@
  *  limitations under the License.
  */
 
-#pragma once
+#include "nvserv/storages/postgres/pg_column.h"
 
-#include <chrono>
-#include <string>
+NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
-#include "nvserv/global_macro.h"
+ PgColumn::PgColumn(const pqxx::field& field) : field_(field) {}
 
-// cppcheck-suppress unknownMacro
-NVSERV_BEGIN_NAMESPACE(storages::postgres::helper)
-
-std::chrono::system_clock::time_point ParseTimestamp(
-    const std::string& timestamp);
-
-std::chrono::system_clock::time_point ParseTimestampz(
-    const std::string& timestamp);
+  std::string PgColumn::Name() const  {
+    return field_.name();
+  }
 
 NVSERV_END_NAMESPACE

@@ -19,38 +19,36 @@
  *  limitations under the License.
  */
 
-#pragma once
-
-#include <ostream>
-#include <pqxx/pqxx>
-
-#include "nvserv/global_macro.h"
-#include "nvserv/storages/cluster_config.h"
-#include "nvserv/storages/storage_config.h"
+#include "nvserv/storages/postgres/pg_row_result_iterator.h"
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
-class PgClusterConfig : public storages::ClusterConfig {
- private:
-  //   std::vector<std::string> cluster_conninfo = {
-  //       "dbname=test user=postgres password=secret hostaddr=192.168.1.1 "
-  //       "port=5432",
-  //       "dbname=test user=postgres password=secret hostaddr=192.168.1.2 "
-  //       "port=5432",
-  //       "dbname=test user=postgres password=secret hostaddr=192.168.1.3 "
-  //       "port=5432"};
+PgRowResultIterator::PgRowResultIterator(const pqxx::result& result,
+                                         size_t index)
+                : result_(result), index_(index) {}
 
-  std::string dbname_;
+PgRowResultIterator& PgRowResultIterator::operator++() {
+  ++index_;
+  return *this;
+}
 
- public:
-  explicit PgClusterConfig(const std::string& dbname, const std::string& user,
-                           const std::string& password, const std::string& host,
-                           uint32_t port);
-                 
+bool PgRowResultIterator::operator==(const RowResultIterator& other) const {
+  auto other_pg = dynamic_cast<const PgRowResultIterator*>(&other);
+  return other_pg && &result_ == &(other_pg->result_) &&
+         index_ == other_pg->index_;
+}
 
-  const __NR_STRING_COMPAT_REF DbName() const;
+bool PgRowResultIterator::operator!=(const RowResultIterator& other) const {
+  return !(*this == other);
+}
 
-  std::string GetConfig() const override;
-};
+RowResultPtr PgRowResultIterator::operator*() const {
+  return std::make_shared<PgRowResult>(
+      std::make_shared<pqxx::row>(result_.at(index_)));
+}
+
+std::unique_ptr<RowResultIterator> PgRowResultIterator::clone() const {
+  return std::make_unique<PgRowResultIterator>(*this);
+}
 
 NVSERV_END_NAMESPACE
