@@ -24,7 +24,9 @@
 #include <nvm/threads/task_pool.h>
 
 #include <chrono>
-
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+#include "nvserv/components/component_config.h"
+#endif
 #include "nvserv/declare.h"
 #include "nvserv/global_macro.h"
 #include "nvserv/storages/cluster_config.h"
@@ -32,10 +34,17 @@
 #include "nvserv/storages/connection_pool_config.h"
 #include "nvserv/storages/declare.h"
 
+
 // cppchekc-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+  class StorageConfigBase : public nvserv::components::ComponentConfig {
+#endif
+
+#if  defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
 class StorageConfigBase {
+#endif
  public:
   virtual const TaskPoolMode& TaskPoolOption() const = 0;
   virtual const bool& ConnectionPoolingSupport() const = 0;

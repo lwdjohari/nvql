@@ -39,9 +39,9 @@
 NVSERV_BEGIN_NAMESPACE(storages)
 
 typedef ConnectionPtr (*ConnectionCreatePrimaryCallback)(
-    const std::string& name, StorageConfig* config);
+    const std::string& name, const StorageConfig* config);
 typedef ConnectionPtr (*ConnectionCreateStandbyCallback)(
-    const std::string& name, StorageConfig* config);
+    const std::string& name, const StorageConfig* config);
 
 class ConnectionPool {
  public:
@@ -55,7 +55,7 @@ class ConnectionPool {
   static constexpr uint16_t DEFAULT_WORKER_MINIMAL = 1;
   static constexpr uint16_t DEFAULT_WORKER_MAXIMAL = 1;
 
-  explicit ConnectionPool(const std::string& name, StorageConfig& config);
+  explicit ConnectionPool(const std::string& name, const StorageConfig& config);
   virtual ~ConnectionPool();
 
   const std::string& Name() const;
@@ -84,7 +84,7 @@ class ConnectionPool {
 
  protected:
   std::string name_;
-  StorageConfig& config_;
+  const StorageConfig& config_;
   ConnectionCreatePrimaryCallback create_primary_connection_callback_;
   ConnectionCreateStandbyCallback create_secondary_connection_callback_;
 

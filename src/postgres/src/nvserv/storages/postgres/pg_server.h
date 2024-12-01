@@ -36,17 +36,38 @@ NVSERV_BEGIN_NAMESPACE(storages::postgres)
 class PgServer final : public StorageServer {
  public:
 #if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+  /// @brief Create component based PgServer. Do not use directly
+  /// Call it from `RegisterStorage<TStorageComponent>(storage_id)`
+  /// @param locator
+  /// @param config
   explicit PgServer(const components::ComponentLocator& locator,
                     const components::ComponentConfig& config)
                   : StorageServer(locator, config,
                                   components::ComponentType::kPostgresFeature),
-                    configs_(CreateConfig(clusters, pool_min_worker,
-                                          pool_max_worker)),
+                    configs_(
+                        static_cast<const postgres::PgStorageConfig&>(config)),
+                    pools_(CreatePools()) {}
+
+  /// @brief Create non-component based PgServer.
+  /// Component Service Locator can not be used.
+  /// You have manually manage the PgServer lifecycle and passing.
+  /// @param name
+  /// @param clusters
+  /// @param pool_min_worker
+  /// @param pool_max_worker
+  explicit PgServer(const std::string& name,
+                    std::initializer_list<PgClusterConfig> clusters,
+                    uint16_t pool_min_worker = 5,
+                    u_int16_t pool_max_worker = 10)
+                  : StorageServer(components::ComponentType::kPostgresFeature),
+                    name_(std::string(name)),
+                    configs_storage_(CreateConfig(clusters, pool_min_worker,
+                                                  pool_max_worker)),
+                    configs_(*configs_storage_),
                     pools_(CreatePools()) {}
 #endif
 
-
-#if  defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   explicit PgServer(const std::string& name,
                     std::initializer_list<PgClusterConfig> clusters,
                     uint16_t pool_min_worker = 5,
@@ -56,10 +77,6 @@ class PgServer final : public StorageServer {
                     configs_(CreateConfig(clusters, pool_min_worker,
                                           pool_max_worker)),
                     pools_(CreatePools()) {}
-
-  // explicit PgServer(const PgStorageConfig& config)
-  //                 : StorageServer(), configs_(config) {}
-
 #endif
 
   ~PgServer() {}
@@ -105,36 +122,28 @@ class PgServer final : public StorageServer {
     return StorageInfo();
   }
 
-/**
- *  If nvql as part of nvserv lib, we must passing it to Configurator Service 
- *  NVQL_STANDALONE=0
- */
-
-#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
-  static PgServerPtr MakePgServer(
-      const std::string& name, std::initializer_list<PgClusterConfig> clusters,
-      uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10);
-#endif
-
-/**
- *  If as nvql lib passing the configuration directly
- *  NVQL_STANDALONE=0
- */
-
-#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   static PgServerPtr MakePgServer(
       const std::string& name, std::initializer_list<PgClusterConfig> clusters,
       uint16_t pool_min_worker = 5, u_int16_t pool_max_worker = 10) {
     return __NR_RETURN_MOVE(std::make_shared<postgres::PgServer>(
         name, clusters, pool_min_worker, pool_max_worker));
   }
-#endif
 
  private:
   std::string name_;
+
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+  std::shared_ptr<PgStorageConfig> configs_storage_;
+  const PgStorageConfig& configs_;
+#endif
+
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   PgStorageConfig configs_;
+#endif
+
   ConnectionPoolPtr pools_;
 
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   PgStorageConfig CreateConfig(const std::vector<PgClusterConfig>& clusters,
                                uint16_t pool_min_worker,
                                u_int16_t pool_max_worker) {
@@ -154,9 +163,38 @@ class PgServer final : public StorageServer {
 
     return __NR_RETURN_MOVE(config);
   }
+#endif
+
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
+  std::shared_ptr<PgStorageConfig> CreateConfig(
+      const std::vector<PgClusterConfig>& clusters, uint16_t pool_min_worker,
+      u_int16_t pool_max_worker) {
+    if (clusters.size() == 0)
+      throw StorageException("No cluster configs, please define at least one "
+                             "connection to postgres DB Server",
+                             StorageType::Postgres);
+
+    ClusterConfigList cluster_configs(StorageType::Postgres);
+    for (const auto& cluster : clusters) {
+      cluster_configs.Add(std::move(PgClusterConfig(cluster)));
+    }
+
+    ConnectionPoolConfig pool_config(pool_min_worker, pool_max_worker);
+
+    return __NR_RETURN_MOVE(std::make_shared<PgStorageConfig>(
+        std::move(cluster_configs), std::move(pool_config)));
+  }
+#endif
 
   ConnectionPoolPtr CreatePools() {
+#if not defined(NVQL_STANDALONE) || NVQL_STANDALONE == 0
     auto pools = std::make_shared<ConnectionPool>(name_, configs_);
+#endif
+
+#if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
+    auto pools = std::make_shared<ConnectionPool>(name_, &configs_);
+#endif
+
     pools_->SetPrimaryConnectionCallback(PgServer::CreatePrimaryPgConnection);
     pools_->SetStandbyConnectionCallback(PgServer::CreateStandbyPgConnection);
 
@@ -164,7 +202,7 @@ class PgServer final : public StorageServer {
   }
 
   static ConnectionPtr CreatePrimaryPgConnection(const std::string& name,
-                                                 StorageConfig* config) {
+                                                 const StorageConfig* config) {
     if (!config)
       throw Exception("Config is null");
 
@@ -176,7 +214,7 @@ class PgServer final : public StorageServer {
   }
 
   static ConnectionPtr CreateStandbyPgConnection(const std::string& name,
-                                                 StorageConfig* config) {
+                                                 const StorageConfig* config) {
     auto conn = std::make_shared<PgConnection>(
         name, config->ClusterConfigs(), ConnectionStandbyMode::Standby,
         config->PoolConfig().ConnectionIdleWait());

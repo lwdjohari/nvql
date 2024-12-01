@@ -24,7 +24,7 @@
 // cppcheck-suppress unknownMacro
 NVSERV_BEGIN_NAMESPACE(storages)
 
-ConnectionPool::ConnectionPool(const std::string& name, StorageConfig& config)
+ConnectionPool::ConnectionPool(const std::string& name, const StorageConfig& config)
                 : name_(std::string(name)), config_(config){};
                 
 ConnectionPool::~ConnectionPool() {}
