@@ -39,21 +39,23 @@ NVSERV_BEGIN_NAMESPACE(storages)
 
 class StorageServer : public components::Component {
  public:
-  explicit StorageServer(const components::ComponentLocator& locator,
-                const components::ComponentConfig& config,
-                components::ComponentType type)
-                  : components::Component(locator, config, type){};
+  explicit StorageServer(components::ComponentType type)
+                  : components::Component(type) {};
 
-  // StorageServer();
+  explicit StorageServer(const components::ComponentLocator& locator,
+                         const components::ComponentConfig& config,
+                         components::ComponentType type)
+                  : components::Component(locator, config, type) {};
+
 #endif
 
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
   class StorageServer {
    public:
-    StorageServer();
+    StorageServer() {};
 #endif
 
-    ~StorageServer(){};
+    virtual ~StorageServer() {};
 
     virtual const std::string& Name() const = 0;
 
