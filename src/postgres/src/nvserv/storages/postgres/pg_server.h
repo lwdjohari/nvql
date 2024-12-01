@@ -192,7 +192,7 @@ class PgServer final : public StorageServer {
 #endif
 
 #if defined(NVQL_STANDALONE) && NVQL_STANDALONE == 1
-    auto pools = std::make_shared<ConnectionPool>(name_, &configs_);
+    auto pools = std::make_shared<ConnectionPool>(name_, configs_);
 #endif
 
     pools_->SetPrimaryConnectionCallback(PgServer::CreatePrimaryPgConnection);
