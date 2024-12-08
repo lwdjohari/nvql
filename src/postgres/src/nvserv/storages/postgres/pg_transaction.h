@@ -337,24 +337,6 @@ class PgSubTransaction final : public PgInnerTransactionBase {
 
 }  // namespace impl
 
-// Alias for the variant type used in parameters, covering common PostgreSQL
-// types
-// using PgInternalParamType =
-//     std::variant<int,          // Integer type
-//                  double,       // Floating-point type
-//                  std::string,  // String type, including JSON and JSONB
-//                  bool,         // Boolean type
-//                  std::chrono::system_clock::time_point,  // Timestamp type
-//                  std::vector<unsigned char>,             // Binary data type
-//                  std::array<unsigned char, 16>,          // UUID type
-//                  pqxx::binarystring,                     // Binary string
-//                  type std::int16_t,                           // Small
-//                  integer type std::int64_t,                           // Big
-//                  integer type float,                                  // Real
-//                  (float) type std::tm,                                // Date
-//                  type pqxx::zview                             // Text array
-//                  type
-//                  >;
 
 class PgTransaction : public Transaction {
  public:
