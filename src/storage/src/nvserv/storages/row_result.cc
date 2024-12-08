@@ -31,7 +31,7 @@ std::optional<Column> RowResult::GetColumn(
   return std::nullopt;
 }
 
-std::optional<Column> RowResult::GetColumn(const size_t& index) const {
+std::optional<Column> RowResult::GetColumn(const int& index) const {
   return std::nullopt;
 }
 

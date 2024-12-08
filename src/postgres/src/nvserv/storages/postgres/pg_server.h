@@ -72,17 +72,17 @@ class PgServer final : public StorageServer {
   bool TryConnect() override;
 
   bool Shutdown(
-      bool grace_shutdown = true,
-      std::chrono::seconds deadline = std::chrono::seconds(0)) override;
+      bool grace_shutdown ,
+      std::chrono::seconds deadline) override;
 
   TransactionPtr Begin(
-      TransactionMode mode = TransactionMode::ReadWrite) override;
+      TransactionMode mode) override;
 
   const StorageConfig& Configs() const override;
 
   const PgStorageConfig& PgConfigs() const;
 
-  const ConnectionPoolPtr Pool() const override;
+   ConnectionPoolPtr Pool() const override;
 
   ConnectionPoolPtr Pool() override;
 

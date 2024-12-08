@@ -49,8 +49,9 @@ void PgConnection::Close() {
 }
 
 bool PgConnection::IsOpen() const {
-  if (!conn_)
+  if (!conn_) {
     return false;
+  }
 
   return conn_->is_open();
 }
@@ -59,11 +60,11 @@ bool PgConnection::IsOpen() const {
 /// Different storage server has different implementations
 /// to guarantee the connection is keep-alive
 void PgConnection::PingServerAsync() {
-  std::cout << "Ping Server: " << GetHash() << std::endl;
+  std::cout << "Ping Server: " << GetHash() << "\n";
 }
 
 bool PgConnection::PingServer() {
-  std::cout << "Ping Server" << std::endl;
+  std::cout << "Ping Server" << "\n";
   return true;
 }
 
@@ -73,7 +74,7 @@ TransactionMode PgConnection::SupportedTransactionMode() const {
 }
 
 void PgConnection::ReportHealth() const {
-  std::cout << "Health Report" << std::endl;
+  std::cout << "Health Report" << "\n";
 }
 
 ConnectionMode PgConnection::Mode() const {
@@ -94,9 +95,10 @@ const std::string& PgConnection::GetConnectionString() const {
 
 std::optional<std::pair<std::string, bool>> PgConnection::PrepareStatement(
     __NR_STRING_COMPAT_REF query) {
-  if (!prepared_statement_manager_)
+  if (!prepared_statement_manager_) {
     throw NullReferenceException("Null reference to PrepareStatemenManagerPtr "
                                  "in prepared_statement_manager_");
+  }
 
   return prepared_statement_manager_->Register(query);
 }
@@ -108,9 +110,11 @@ pqxx::connection* PgConnection::Driver() {
 // protected
 
 void PgConnection::OpenImpl() {
-  if (conn_)
+  if (conn_) {
     throw ConnectionException("Connection already created",
                               StorageType::Postgres);
+  }
+
   try {
     // std::cout << "Connection string:" << connection_string_ << std::endl;
 
@@ -132,15 +136,17 @@ void PgConnection::OpenImpl() {
 }
 
 void PgConnection::CloseImpl() {
-  if (!conn_)
+  if (!conn_) {
     return;
-  if (!conn_->is_open())
+  }
+  if (!conn_->is_open()) {
     return;
+  }
 
   try {
     // Explicitly close the connection
     conn_->close();
-    std::cout << "Connection to database closed successfully." << std::endl;
+    std::cout << "Connection to database closed successfully." << "\n";
   } catch (const pqxx::broken_connection& e) {
     throw ConnectionException(e.what(), StorageType::Postgres);
   } catch (const std::exception& e) {
@@ -152,8 +158,9 @@ void PgConnection::CloseImpl() {
 }
 
 void PgConnection::ReleaseImpl() {
-  if (!conn_)
+  if (!conn_) {
     return;
+  }
 
   Close();
   conn_ = nullptr;
@@ -173,15 +180,16 @@ size_t PgConnection::CreateHashKey() {
 }
 
 std::string PgConnection::BuildConnectionString() {
-  if (clusters_.Configs().size() == 0)
+  if (clusters_.Configs().empty()) {
     return std::string();
+  }
 
   std::ostringstream host;
   std::string dbname;
 
   uint16_t index = 0;
 
-  for (auto cluster : clusters_.Configs()) {
+  for (const auto& cluster : clusters_.Configs()) {
     auto pg_cluster = std::dynamic_pointer_cast<PgClusterConfig>(cluster);
     if (index == 0) {
       host << "postgresql://" << std::string(pg_cluster->User()) << ":"

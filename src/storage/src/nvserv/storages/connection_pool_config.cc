@@ -25,7 +25,7 @@
 NVSERV_BEGIN_NAMESPACE(storages)
 
 ConnectionPoolConfig::ConnectionPoolConfig(
-    int16_t min_connection, int16_t max_connection, bool keep_alive,
+    uint16_t min_connection, uint16_t max_connection, bool keep_alive,
     std::chrono::seconds connection_timeout,
     std::chrono::seconds ping_server_interval,
     std::chrono::seconds connection_idle_wait,
@@ -43,11 +43,11 @@ ConnectionPoolConfig::ConnectionPoolConfig(
                       max_waiting_for_trans_creation),
                   cleanup_interval_(cleanup_interval) {}
 
-const int16_t& ConnectionPoolConfig::MinConnection() const {
+const uint16_t& ConnectionPoolConfig::MinConnection() const {
   return min_connection_;
 }
 
-const int16_t& ConnectionPoolConfig::MaxConnection() const {
+const uint16_t& ConnectionPoolConfig::MaxConnection() const {
   return min_connection_;
 }
 

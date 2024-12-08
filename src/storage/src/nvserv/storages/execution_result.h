@@ -38,7 +38,7 @@ class ExecutionResult {
   virtual ~ExecutionResult();
   virtual bool Empty() const = 0;
   virtual size_t RowAffected() const = 0;
-  virtual RowResultPtr At(const size_t& offset) const = 0;
+  virtual RowResultPtr At(const int& offset) const = 0;
   virtual std::unique_ptr<RowResultIterator> begin() const = 0;
   virtual std::unique_ptr<RowResultIterator> end() const = 0;
   StorageType Type() const;

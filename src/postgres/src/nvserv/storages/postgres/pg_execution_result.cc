@@ -19,39 +19,39 @@
  *  limitations under the License.
  */
 
-
 #include "nvserv/storages/postgres/pg_execution_result.h"
+
+#include "nvserv/exceptions.h"
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
+PgExecutionResult::PgExecutionResult(pqxx::result&& result)
+                : ExecutionResult(StorageType::Postgres),
+                  result_(std::forward<pqxx::result>(result)) {}
 
- PgExecutionResult::PgExecutionResult(pqxx::result&& result)
-                  : ExecutionResult(StorageType::Postgres),
-                    result_(std::forward<pqxx::result>(result)) {}
+bool PgExecutionResult::Empty() const {
+  return result_.empty();
+}
 
-  bool PgExecutionResult::Empty() const  {
-    return result_.empty();
+size_t PgExecutionResult::RowAffected() const {
+  return result_.affected_rows();
+}
+
+RowResultPtr PgExecutionResult::At(const int& offset) const {
+  if (offset < 0 || offset >= result_.size()) {
+    throw nvserv::OutOfBoundException("`At`offset out of range [" +
+                                      std::to_string(offset) + "]");
   }
+  return std::make_shared<PgRowResult>(
+      std::make_shared<pqxx::row>(result_.at(offset)));
+}
 
-  size_t PgExecutionResult::RowAffected() const  {
-    return result_.affected_rows();
-  }
+std::unique_ptr<RowResultIterator> PgExecutionResult::begin() const {
+  return std::make_unique<PgRowResultIterator>(result_, 0);
+}
 
-  RowResultPtr PgExecutionResult::At(const size_t& offset) const  {
-    if (offset >= result_.size()) {
-      throw std::out_of_range("Offset out of range");
-    }
-    return std::make_shared<PgRowResult>(
-        std::make_shared<pqxx::row>(result_.at(offset)));
-  }
+std::unique_ptr<RowResultIterator> PgExecutionResult::end() const {
+  return std::make_unique<PgRowResultIterator>(result_, result_.size());
+}
 
-  std::unique_ptr<RowResultIterator> PgExecutionResult::begin() const  {
-    return std::make_unique<PgRowResultIterator>(result_, 0);
-  }
-
-  std::unique_ptr<RowResultIterator> PgExecutionResult::end() const  {
-    return std::make_unique<PgRowResultIterator>(result_, result_.size());
-  }
-
- 
 NVSERV_END_NAMESPACE

@@ -48,7 +48,7 @@ class PgClusterConfig : public storages::ClusterConfig {
                            uint32_t port);
                  
 
-  const __NR_STRING_COMPAT_REF DbName() const;
+   __NR_STRING_COMPAT_REF DbName() const;
 
   std::string GetConfig() const override;
 };

@@ -44,22 +44,22 @@ class RowResult {
  public:
   virtual std::optional<Column> GetColumn(const std::string& column_name) const;
 
-  virtual std::optional<Column> GetColumn(const size_t& index) const;
+  virtual std::optional<Column> GetColumn(const int& index) const;
 
   template <typename T>
-  T As(const size_t& index) const;
+  T As(const int& index) const;
 
   template <typename T>
   T As(const std::string& column_name) const;
 
   template <typename T>
-  T AsDateTimeOffset(const size_t& index);
+  T AsDateTimeOffset(const int& index);
 
   template <typename T>
   T AsDateTimeOffset(const std::string& column_name);
 
   template <typename T>
-  T AsDateTime(const size_t& index);
+  T AsDateTime(const int& index);
 
   template <typename T>
   T AsDateTime(const std::string& column_name);
@@ -73,29 +73,29 @@ class RowResult {
   explicit RowResult();
 
   virtual int16_t AsImpl_int16_t(const std::string& column_name) const = 0;
-  virtual int16_t AsImpl_int16_t(const size_t& index) const = 0;
+  virtual int16_t AsImpl_int16_t(const int& index) const = 0;
   virtual int32_t AsImpl_int32_t(const std::string& column_name) const = 0;
-  virtual int32_t AsImpl_int32_t(const size_t& index) const = 0;
+  virtual int32_t AsImpl_int32_t(const int& index) const = 0;
   virtual int64_t AsImpl_int64_t(const std::string& column_name) const = 0;
-  virtual int64_t AsImpl_int64_t(const size_t& index) const = 0;
+  virtual int64_t AsImpl_int64_t(const int& index) const = 0;
   virtual std::string AsImpl_string(const std::string& column_name) const = 0;
-  virtual std::string AsImpl_string(const size_t& index) const = 0;
+  virtual std::string AsImpl_string(const int& index) const = 0;
   virtual float AsImpl_float(const std::string& column_name) const = 0;
-  virtual float AsImpl_float(const size_t& index) const = 0;
+  virtual float AsImpl_float(const int& index) const = 0;
   virtual double AsImpl_double(const std::string& column_name) const = 0;
-  virtual double AsImpl_double(const size_t& index) const = 0;
+  virtual double AsImpl_double(const int& index) const = 0;
   virtual nvm::dates::DateTime AsImpl_DateTime_Timestampz(
       const std::string& column_name) const = 0;
   virtual nvm::dates::DateTime AsImpl_DateTime_Timestampz(
-      const size_t& index) const = 0;
+      const int& index) const = 0;
   virtual nvm::dates::DateTime AsImpl_DateTime_Timestamp(
       const std::string& column_name) const = 0;
   virtual nvm::dates::DateTime AsImpl_DateTime_Timestamp(
-      const size_t& index) const = 0;
+      const int& index) const = 0;
 };
 
 template <typename T>
-T RowResult::As(const size_t& index) const {
+T RowResult::As(const int& index) const {
   if constexpr (is_type_v<T, int64_t>) {
     return AsImpl_int64_t(index);
   } else if constexpr (is_type_v<T, int32_t>) {
@@ -138,7 +138,7 @@ T RowResult::As(const std::string& column_name) const {
 }
 
 template <typename T>
-T RowResult::AsDateTimeOffset(const size_t& index) {
+T RowResult::AsDateTimeOffset(const int& index) {
   if constexpr (is_type_v<T, nvm::dates::DateTime>) {
     return AsImpl_DateTime_Timestampz(index);
   } else {
@@ -158,7 +158,7 @@ T RowResult::AsDateTimeOffset(const std::string& column_name) {
 }
 
 template <typename T>
-T RowResult::AsDateTime(const size_t& index) {
+T RowResult::AsDateTime(const int& index) {
   if constexpr (is_type_v<T, nvm::dates::DateTime>) {
     return AsImpl_DateTime_Timestamp(index);
   } else {

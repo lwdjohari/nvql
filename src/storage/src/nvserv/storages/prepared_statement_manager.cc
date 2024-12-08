@@ -51,22 +51,25 @@ std::chrono::system_clock::time_point PreparedStatementItem::CreatedTime()
   return created_time_;
 }
 
-PreparedStatementManager::PreparedStatementManager(){};
-PreparedStatementManager::~PreparedStatementManager(){};
+PreparedStatementManager::PreparedStatementManager() {};
+PreparedStatementManager::~PreparedStatementManager() {};
 
 std::optional<std::pair<std::string, bool>> PreparedStatementManager::Register(
     const __NR_STRING_COMPAT_REF query) {
-  if (query.empty())
+  if (query.empty()) {
     return std::nullopt;
+  }
 
   if (nvm::strings::utility::IsWhitespaceString(
-          __NR_CALL_STRING_COMPAT_REF(query)))
+          __NR_CALL_STRING_COMPAT_REF(query))) {
     return std::nullopt;
+  }
 
   auto key = hash_fn_(__NR_CALL_STRING_COMPAT_REF(query));
   auto key_str = GenerateKey(key);
-  if (IsKeyExist(key_str))
+  if (IsKeyExist(key_str)) {
     return __NR_RETURN_MOVE(std::make_pair(key_str, false));
+  }
 
   statements_.emplace(
       key_str,

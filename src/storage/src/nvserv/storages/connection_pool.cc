@@ -65,22 +65,23 @@ void ConnectionPool::Stop() {
 
 void ConnectionPool::StopImpl() {
   absl::MutexLockMaybe lock(&mutex_main_);
-  if (!is_run_)
+  if (!is_run_){
     return;
+    }
 
   is_run_ = false;
 
   acquired_.clear();
   auto size = connections_.size();
   for (size_t i = 0; i < size; i++) {
-    auto element = connections_.front();
+    // just pop to remove
+    // auto element = connections_.front();
     connections_.pop();
-    element = nullptr;
   }
 
   // close all conections
   for (auto& conn : connection_storages_) {
-    std::cout << "Close: " << conn.second->GetHash() << std::endl;
+    std::cout << "Close: " << conn.second->GetHash() << "\n";
     conn.second->Close();
     conn.second.reset();
   }
@@ -121,8 +122,9 @@ ConnectionPtr ConnectionPool::Acquire() {
 }
 
 bool ConnectionPool::Return(ConnectionPtr conn) {
-  if (!conn)
+  if (!conn){
     return false;
+  }
   absl::MutexLock lock(&mutex_main_);
 
   // Check if the connection was originaly instancing from this pool
@@ -166,10 +168,10 @@ void ConnectionPool::InitializePrimaryConnections() {
 
     // get pointer to the node
     auto back = connection_storages_.emplace(key, std::move(conn));
-    if (!back.second)
+    if (!back.second){
       throw BadAllocationException("Bad alloc during initialize the "
                                    "connection into connection pool");
-
+    }
     auto it = back.first;
     std::pair<const size_t, ConnectionPtr>* node_ptr = &(*it);
 
@@ -206,9 +208,10 @@ void ConnectionPool::RunImpl() {
     absl::MutexLockMaybe lock(&mutex_main_);
     // std::cout << "Initialize connections..." << std::endl;
 
-    if (!create_primary_connection_callback_)
+    if (!create_primary_connection_callback_){
       throw InvalidArgException(
           "Null-reference on \"ConnectionCreateCallback callback\".");
+    }
     is_run_ = true;
 
     InitializePrimaryConnections();
@@ -223,16 +226,17 @@ void ConnectionPool::PingService() {
   // server We're only ping connection that are currently not leased
 
   absl::MutexLock lock(&mutex_main_);
-  if (!is_run_)
+  if (!is_run_){
     return;
+  }
 
-  std::cout << "[" << absl::Now() << "] " << "Ping running..." << std::endl;
+  std::cout << "[" << absl::Now() << "] " << "Ping running..." << "\n";
 
   for (size_t i = connections_.size(); i > 0; --i) {
     auto element = connections_.front();
     connections_.pop();
     element->second->PingServerAsync();
-    connections_.push(std::move(element));
+    connections_.push(std::move(element)); //NOLINT
   }
   cv_main_.SignalAll();
 }
@@ -242,13 +246,15 @@ void ConnectionPool::CleanupService() {
   // We're only cleanup connection that are currently not leased
 
   absl::MutexLock lock(&mutex_main_);
-  if (!is_run_)
+  if (!is_run_){
     return;
+  }
 
-  if (connections_.empty())
+  if (connections_.empty()){
     return;
+  }
 
-  std::cout << "[" << absl::Now() << "] " << "Cleanup running..." << std::endl;
+  std::cout << "[" << absl::Now() << "] " << "Cleanup running..." << "\n";
 
   for (size_t i = connections_.size(); i > 0; --i) {
     auto element = connections_.front();
@@ -259,7 +265,7 @@ void ConnectionPool::CleanupService() {
       element->second->Release();
       element->second.reset();
     } else {
-      connections_.push(std::move(element));
+      connections_.push(std::move(element)); //NOLINT
     }
   }
 }

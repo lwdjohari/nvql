@@ -55,7 +55,7 @@ class PgConnection : public Connection {
   /// to guarantee the connection is keep-alive
   void PingServerAsync() override;
 
-  virtual bool PingServer() override;
+    bool PingServer() override;
 
   TransactionMode SupportedTransactionMode() const override;
 

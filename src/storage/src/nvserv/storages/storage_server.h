@@ -55,7 +55,7 @@ class StorageServer : public components::Component {
     StorageServer() {};
 #endif
 
-    virtual ~StorageServer() {};
+    virtual ~StorageServer() {};  // NOLINT
 
     virtual const std::string& Name() const = 0;
 
@@ -63,14 +63,12 @@ class StorageServer : public components::Component {
 
     virtual bool TryConnect() = 0;
 
-    virtual bool Shutdown(
-        bool grace_shutdown = true,
-        std::chrono::seconds deadline = std::chrono::seconds(0)) = 0;
+    virtual bool Shutdown(bool grace_shutdown,
+                          std::chrono::seconds deadline) = 0;
 
-    virtual TransactionPtr Begin(
-        TransactionMode mode = TransactionMode::ReadWrite) = 0;
+    virtual TransactionPtr Begin(TransactionMode mode) = 0;
 
-    virtual const ConnectionPoolPtr Pool() const = 0;
+    virtual  ConnectionPoolPtr Pool() const = 0;
 
     virtual ConnectionPoolPtr Pool() = 0;
 

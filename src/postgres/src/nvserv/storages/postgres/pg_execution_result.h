@@ -38,7 +38,7 @@ class PgExecutionResult : public ExecutionResult {
 
   size_t RowAffected() const override;
 
-  RowResultPtr At(const size_t& offset) const override;
+  RowResultPtr At(const int& offset) const override;
 
   std::unique_ptr<RowResultIterator> begin() const override;
 

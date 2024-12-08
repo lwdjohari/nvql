@@ -20,6 +20,7 @@
  */
 
 #include "nvserv/storages/postgres/pg_row_result.h"
+#include "nvserv/exceptions.h"
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
@@ -36,10 +37,14 @@ std::optional<Column> PgRowResult::GetColumn(
   }
 }
 
-std::optional<Column> PgRowResult::GetColumn(const size_t& index) const  {
-  if (index >= row_->size()) {
-    return std::nullopt;
+std::optional<Column> PgRowResult::GetColumn(const int& index) const  {
+  
+  if (index<0 || index >= row_->size()) {
+    // to avoid UB
+    // we have to throws
+    throw nvserv::OutOfBoundException("`GetColumn` index is out-of-bounds [" + std::to_string(index) + "]");
   }
+
   return PgColumn(row_->at(index));
 }
 
@@ -55,7 +60,7 @@ size_t PgRowResult::Size() const  {
 //     return ColumnIterator(row_, row_.size());
 // }
 
-int16_t PgRowResult::AsImpl_int16_t(const size_t& index) const  {
+int16_t PgRowResult::AsImpl_int16_t(const int& index) const  {
   try {
     return row_->at(index).as<int16_t>();
   } catch (const std::exception& e) {
@@ -64,7 +69,7 @@ int16_t PgRowResult::AsImpl_int16_t(const size_t& index) const  {
   }
 };
 
-int32_t PgRowResult::AsImpl_int32_t(const size_t& index) const  {
+int32_t PgRowResult::AsImpl_int32_t(const int& index) const  {
   try {
     return row_->at(index).as<int32_t>();
   } catch (const std::exception& e) {
@@ -73,7 +78,7 @@ int32_t PgRowResult::AsImpl_int32_t(const size_t& index) const  {
   }
 };
 
-int64_t PgRowResult::AsImpl_int64_t(const size_t& index) const  {
+int64_t PgRowResult::AsImpl_int64_t(const int& index) const  {
   try {
     return row_->at(index).as<int64_t>();
   } catch (const std::exception& e) {
@@ -82,7 +87,7 @@ int64_t PgRowResult::AsImpl_int64_t(const size_t& index) const  {
   }
 };
 
-std::string PgRowResult::AsImpl_string(const size_t& index) const  {
+std::string PgRowResult::AsImpl_string(const int& index) const  {
   try {
     return row_->at(index).as<std::string>();
   } catch (const std::exception& e) {
@@ -91,7 +96,7 @@ std::string PgRowResult::AsImpl_string(const size_t& index) const  {
   }
 };
 
-float PgRowResult::AsImpl_float(const size_t& index) const  {
+float PgRowResult::AsImpl_float(const int& index) const  {
   try {
     return row_->at(index).as<float>();
   } catch (const std::exception& e) {
@@ -100,7 +105,7 @@ float PgRowResult::AsImpl_float(const size_t& index) const  {
   }
 };
 
-double PgRowResult::AsImpl_double(const size_t& index) const  {
+double PgRowResult::AsImpl_double(const int& index) const  {
   try {
     return row_->at(index).as<double>();
   } catch (const std::exception& e) {
@@ -110,7 +115,7 @@ double PgRowResult::AsImpl_double(const size_t& index) const  {
 };
 
 nvm::dates::DateTime PgRowResult::AsImpl_DateTime_Timestampz(
-    const size_t& index) const  {
+    const int& index) const  {
   try {
     auto time_point =
         helper::ParseTimestampz(row_->at(index).as<std::string>());
@@ -122,7 +127,7 @@ nvm::dates::DateTime PgRowResult::AsImpl_DateTime_Timestampz(
 };
 
 nvm::dates::DateTime PgRowResult::AsImpl_DateTime_Timestamp(
-    const size_t& index) const  {
+    const int& index) const  {
   try {
     auto time_point = helper::ParseTimestamp(row_->at(index).as<std::string>());
     return nvm::dates::DateTime(time_point, "Etc/Utc");

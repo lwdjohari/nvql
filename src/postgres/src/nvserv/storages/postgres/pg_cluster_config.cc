@@ -30,7 +30,7 @@ PgClusterConfig::PgClusterConfig(const std::string& dbname, const std::string& u
                                   port),
                     dbname_(dbname){};
 
-  const __NR_STRING_COMPAT_REF PgClusterConfig::DbName() const {
+   __NR_STRING_COMPAT_REF PgClusterConfig::DbName() const {
     return dbname_;
   }
 

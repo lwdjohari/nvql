@@ -124,7 +124,7 @@ int main() {
 
         if (result->Empty()) {
           std::cout << "No customers data.." << std::endl;
-          server->Shutdown();
+          server->Shutdown(true,std::chrono::seconds(0));
           return 0;
         }
 
@@ -158,7 +158,7 @@ int main() {
 
         if (result->Empty()) {
           std::cout << "No customers data.." << std::endl;
-          server->Shutdown();
+          server->Shutdown(true,std::chrono::seconds(0));
           return 0;
         }
 
@@ -188,7 +188,7 @@ int main() {
     std::this_thread::sleep_for(std::chrono::seconds(60));
     std::cout << std::endl;
     
-    server->Shutdown();
+    server->Shutdown(true,std::chrono::seconds(0));
   } catch (const StorageException& e) {
     std::cerr << e.what() << '\n';
   }

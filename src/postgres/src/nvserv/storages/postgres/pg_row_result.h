@@ -42,7 +42,7 @@ class PgRowResult : public RowResult {
   virtual ~PgRowResult();
   std::optional<Column> GetColumn(const std::string& columnName) const override;
 
-  std::optional<Column> GetColumn(const size_t& index) const override;
+  std::optional<Column> GetColumn(const int& index) const override;
 
   size_t Size() const override;
 
@@ -54,23 +54,23 @@ class PgRowResult : public RowResult {
   //     return ColumnIterator(row_, row_.size());
   // }
 
-  int16_t AsImpl_int16_t(const size_t& index) const override;
+  int16_t AsImpl_int16_t(const int& index) const override;
 
-  int32_t AsImpl_int32_t(const size_t& index) const override;
+  int32_t AsImpl_int32_t(const int& index) const override;
 
-  int64_t AsImpl_int64_t(const size_t& index) const override;
+  int64_t AsImpl_int64_t(const int& index) const override;
 
-  std::string AsImpl_string(const size_t& index) const override;
+  std::string AsImpl_string(const int& index) const override;
 
-  float AsImpl_float(const size_t& index) const override;
+  float AsImpl_float(const int& index) const override;
 
-  double AsImpl_double(const size_t& index) const override;
+  double AsImpl_double(const int& index) const override;
 
   nvm::dates::DateTime AsImpl_DateTime_Timestampz(
-      const size_t& index) const override;
+      const int& index) const override;
 
   nvm::dates::DateTime AsImpl_DateTime_Timestamp(
-      const size_t& index) const override;
+      const int& index) const override;
 
   int16_t AsImpl_int16_t(const std::string& column_name) const override;
 

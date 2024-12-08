@@ -23,8 +23,7 @@
 
 NVSERV_BEGIN_NAMESPACE(storages::postgres)
 
-PgRowResultIterator::PgRowResultIterator(const pqxx::result& result,
-                                         size_t index)
+PgRowResultIterator::PgRowResultIterator(const pqxx::result& result, int index)
                 : result_(result), index_(index) {}
 
 PgRowResultIterator& PgRowResultIterator::operator++() {

@@ -83,7 +83,7 @@ const PgStorageConfig& PgServer::PgConfigs() const {
   return configs_;
 }
 
-const ConnectionPoolPtr PgServer::Pool() const {
+ ConnectionPoolPtr PgServer::Pool() const {
   return pools_;
 }
 
@@ -109,7 +109,7 @@ PgServerPtr PgServer::MakePgServer(
 PgStorageConfig PgServer::CreateConfig(
     const std::vector<PgClusterConfig>& clusters, uint16_t pool_min_worker,
     u_int16_t pool_max_worker) {
-  if (clusters.size() == 0)
+  if (clusters.empty())
     throw StorageException("No cluster configs, please define at least one "
                            "connection to postgres DB Server",
                            StorageType::Postgres);
@@ -119,9 +119,9 @@ PgStorageConfig PgServer::CreateConfig(
     cluster_configs.Add(std::move(PgClusterConfig(cluster)));
   }
 
-  ConnectionPoolConfig pool_config(pool_min_worker, pool_max_worker);
-
-  PgStorageConfig config(std::move(cluster_configs), std::move(pool_config));
+  PgStorageConfig config(
+    std::move(cluster_configs), 
+    ConnectionPoolConfig(pool_min_worker, pool_max_worker));
 
   return __NR_RETURN_MOVE(config);
 }
@@ -131,20 +131,21 @@ PgStorageConfig PgServer::CreateConfig(
 std::shared_ptr<PgStorageConfig> PgServer::CreateConfig(
     const std::vector<PgClusterConfig>& clusters, uint16_t pool_min_worker,
     u_int16_t pool_max_worker) {
-  if (clusters.size() == 0)
+  if (clusters.empty()) {
     throw StorageException("No cluster configs, please define at least one "
                            "connection to postgres DB Server",
                            StorageType::Postgres);
+  }
 
   ClusterConfigList cluster_configs(StorageType::Postgres);
+
   for (const auto& cluster : clusters) {
     cluster_configs.Add(std::move(PgClusterConfig(cluster)));
   }
 
-  ConnectionPoolConfig pool_config(pool_min_worker, pool_max_worker);
-
   return __NR_RETURN_MOVE(std::make_shared<PgStorageConfig>(
-      std::move(cluster_configs), std::move(pool_config)));
+      std::move(cluster_configs),
+      ConnectionPoolConfig(pool_min_worker, pool_max_worker)));
 }
 #endif
 
@@ -166,8 +167,9 @@ ConnectionPoolPtr PgServer::CreatePools() {
 // static
 ConnectionPtr PgServer::CreatePrimaryPgConnection(const std::string& name,
                                                   const StorageConfig* config) {
-  if (!config)
+  if (!config) {
     throw Exception("Config is null");
+  }
 
   auto conn = std::make_shared<PgConnection>(
       name, config->ClusterConfigs(), ConnectionStandbyMode::Primary,
@@ -189,16 +191,17 @@ ConnectionPtr PgServer::CreateStandbyPgConnection(const std::string& name,
 // Late declare
 
 std::shared_ptr<PgConnection> PgTransaction::GetConnectionFromPool() {
-  if (!server_)
+  if (!server_) {
     throw storages::TransactionException(
         "PgServer is Null, Unable to get connection from pool",
         StorageType::Postgres);
-
+  }
   auto conn = server_->Pool()->Acquire();
-  if (!conn)
+  if (!conn) {
     throw storages::TransactionException(
         "Transaction Begin failed, can't acquired connection from pool",
         StorageType::Postgres);
+  }
   auto res = std::static_pointer_cast<PgConnection>(conn);
   return __NR_RETURN_MOVE(res);
 }

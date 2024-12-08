@@ -115,6 +115,7 @@ enum class TransactionMode : uint16_t {
   NonTransaction = 8
 };
 
+// NOLINTNEXTLINE
 NVM_ENUMCLASS_ENABLE_BITMASK_OPERATORS(TransactionMode)
 
 NVM_ENUM_CLASS_DISPLAY_TRAIT(TransactionMode)

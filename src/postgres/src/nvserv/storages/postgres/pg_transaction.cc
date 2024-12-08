@@ -72,7 +72,7 @@ PgWorkTransaction::PgWorkTransaction(pqxx::connection* conn)
 ExecutionResultPtr PgWorkTransaction::Execute(
     const __NR_STRING_COMPAT_REF query_key,
     const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty() ) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -86,7 +86,7 @@ ExecutionResultPtr PgWorkTransaction::Execute(
 
 ExecutionResultPtr PgWorkTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -119,7 +119,7 @@ PgNonTransaction::PgNonTransaction(pqxx::connection* conn)
 ExecutionResultPtr PgNonTransaction::Execute(
     const __NR_STRING_COMPAT_REF query_key,
     const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -133,7 +133,7 @@ ExecutionResultPtr PgNonTransaction::Execute(
 
 ExecutionResultPtr PgNonTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -166,7 +166,7 @@ PgReadOnlyTransaction::PgReadOnlyTransaction(pqxx::connection* conn)
 ExecutionResultPtr PgReadOnlyTransaction::Execute(
     const __NR_STRING_COMPAT_REF query_key,
     const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -180,7 +180,7 @@ ExecutionResultPtr PgReadOnlyTransaction::Execute(
 
 ExecutionResultPtr PgReadOnlyTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
-  if (args.size() == 0) {
+  if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
     return std::make_shared<PgExecutionResult>(std::move(result));
   } else {
@@ -263,22 +263,25 @@ void PgTransaction::Rollback() {
 ExecutionResultPtr PgTransaction::ExecuteImpl(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
   auto key = connection_->PrepareStatement(query);
-  if (!key.has_value())
+  if (!key.has_value()){
     throw TransactionException("Exceptions on empty sql query on Execute",
                                StorageType::Postgres);
+  }
 
-  if (key.value().second)
+  if (key.value().second){
     connection_->Driver()->prepare(key.value().first,
                                    __NR_CALL_STRING_COMPAT_REF(query));
+  }
 
   return __NR_RETURN_MOVE(transact_->Execute(key.value().first, args));
 }
 
 ExecutionResultPtr PgTransaction::ExecuteNonPreparedImpl(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
-  if (query.empty())
+  if (query.empty()){
     throw TransactionException("Exceptions on empty sql query on Execute",
                                StorageType::Postgres);
+  }
 
   return __NR_RETURN_MOVE(transact_->ExecuteNonPrepared(query, args));
 }

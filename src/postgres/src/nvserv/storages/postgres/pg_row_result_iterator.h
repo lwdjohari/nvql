@@ -41,7 +41,7 @@ class PgRowResultIterator : public RowResultIterator {
   using pointer = const RowResultPtr*;
   using reference = const RowResultPtr&;
 
-  explicit PgRowResultIterator(const pqxx::result& result, size_t index);
+  explicit PgRowResultIterator(const pqxx::result& result, int index);
                 
   PgRowResultIterator& operator++() override;
 
@@ -55,7 +55,7 @@ class PgRowResultIterator : public RowResultIterator {
 
  private:
   const pqxx::result& result_;
-  size_t index_;
+  int index_;
 };
 
 NVSERV_END_NAMESPACE

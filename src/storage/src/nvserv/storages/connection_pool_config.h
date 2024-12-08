@@ -35,7 +35,7 @@ NVSERV_BEGIN_NAMESPACE(storages)
 class ConnectionPoolConfig {
  public:
   explicit ConnectionPoolConfig(
-      int16_t min_connection, int16_t max_connection, bool keep_alive = true,
+      uint16_t min_connection, uint16_t max_connection, bool keep_alive = true,
       std::chrono::seconds connection_timeout = std::chrono::seconds(5),
       std::chrono::seconds ping_server_interval = std::chrono::seconds(30),
       std::chrono::seconds connection_idle_wait = std::chrono::seconds(120),
@@ -44,9 +44,9 @@ class ConnectionPoolConfig {
           std::chrono::seconds(5),
       std::chrono::seconds cleanup_interval = std::chrono::seconds(45));
 
-  const int16_t& MinConnection() const;
+  const uint16_t& MinConnection() const;
 
-  const int16_t& MaxConnection() const ;
+  const uint16_t& MaxConnection() const ;
 
   const bool& KeepAlive() const ;
 
@@ -63,8 +63,8 @@ class ConnectionPoolConfig {
   const std::chrono::seconds& CleanupInterval() const ;
 
  protected:
-  int16_t min_connection_;
-  int16_t max_connection_;
+  uint16_t min_connection_;
+  uint16_t max_connection_;
   bool keep_alive_;
   std::chrono::seconds connection_timeout_;
   std::chrono::seconds ping_server_interval_;
