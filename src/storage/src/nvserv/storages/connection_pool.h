@@ -112,6 +112,8 @@ class ConnectionPool {
   bool is_ready_;
 
   threads::EventLoopExecutor services_;
+  threads::EventLoopExecutor::TaskPtr task_ping_ptr_;
+  threads::EventLoopExecutor::TaskPtr task_clean_ptr_;
 
   void InitializePrimaryConnections();
 

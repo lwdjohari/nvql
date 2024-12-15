@@ -72,7 +72,7 @@ bool PgServer::Shutdown(bool grace_shutdown, std::chrono::seconds deadline) {
 }
 
 TransactionPtr PgServer::Begin(TransactionMode mode) {
-  return __NR_RETURN_MOVE(std::make_shared<PgTransaction>(this, mode));
+  return std::move(std::make_shared<PgTransaction>(this, mode));
 }
 
 const StorageConfig& PgServer::Configs() const {
@@ -99,7 +99,7 @@ StorageInfo PgServer::GetStorageServerInfo() const {
 PgServerPtr PgServer::MakePgServer(
     const std::string& name, std::initializer_list<PgClusterConfig> clusters,
     uint16_t pool_min_worker, u_int16_t pool_max_worker) {
-  return __NR_RETURN_MOVE(std::make_shared<postgres::PgServer>(
+  return std::move(std::make_shared<postgres::PgServer>(
       name, clusters, pool_min_worker, pool_max_worker));
 }
 
@@ -161,7 +161,7 @@ ConnectionPoolPtr PgServer::CreatePools() {
   pools_->SetPrimaryConnectionCallback(PgServer::CreatePrimaryPgConnection);
   pools_->SetStandbyConnectionCallback(PgServer::CreateStandbyPgConnection);
 
-  return __NR_RETURN_MOVE(pools);
+  return std::move(pools);
 }
 
 // static
@@ -175,7 +175,7 @@ ConnectionPtr PgServer::CreatePrimaryPgConnection(const std::string& name,
       name, config->ClusterConfigs(), ConnectionStandbyMode::Primary,
       config->PoolConfig().ConnectionIdleWait());
 
-  return __NR_RETURN_MOVE(conn);
+  return std::move(conn);
 }
 
 // static
@@ -185,7 +185,7 @@ ConnectionPtr PgServer::CreateStandbyPgConnection(const std::string& name,
       name, config->ClusterConfigs(), ConnectionStandbyMode::Standby,
       config->PoolConfig().ConnectionIdleWait());
 
-  return __NR_RETURN_MOVE(conn);
+  return std::move(conn);
 }
 
 // Late declare

@@ -42,8 +42,8 @@ bool PgRowResultIterator::operator!=(const RowResultIterator& other) const {
 }
 
 RowResultPtr PgRowResultIterator::operator*() const {
-  return std::make_shared<PgRowResult>(
-      std::make_shared<pqxx::row>(result_.at(index_)));
+  return std::move(std::make_shared<PgRowResult>(
+      std::make_shared<pqxx::row>(result_.at(index_))));
 }
 
 std::unique_ptr<RowResultIterator> PgRowResultIterator::clone() const {

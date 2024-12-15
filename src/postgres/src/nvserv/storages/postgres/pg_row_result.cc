@@ -119,7 +119,7 @@ nvm::dates::DateTime PgRowResult::AsImpl_DateTime_Timestampz(
   try {
     auto time_point =
         helper::ParseTimestampz(row_->at(index).as<std::string>());
-    return nvm::dates::DateTime(time_point, "Etc/Utc");
+    return __NR_RETURN_MOVE(nvm::dates::DateTime(time_point, "Etc/Utc"));
   } catch (const std::exception& e) {
     // std::cerr << e.what() << '\n';
     throw std::invalid_argument(e.what());
@@ -130,7 +130,7 @@ nvm::dates::DateTime PgRowResult::AsImpl_DateTime_Timestamp(
     const int& index) const  {
   try {
     auto time_point = helper::ParseTimestamp(row_->at(index).as<std::string>());
-    return nvm::dates::DateTime(time_point, "Etc/Utc");
+    return __NR_RETURN_MOVE(nvm::dates::DateTime(time_point, "Etc/Utc"));
   } catch (const std::exception& e) {
     // std::cerr << e.what() << '\n';
     throw std::invalid_argument(e.what());

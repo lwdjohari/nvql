@@ -42,8 +42,8 @@ RowResultPtr PgExecutionResult::At(const int& offset) const {
     throw nvserv::OutOfBoundException("`At`offset out of range [" +
                                       std::to_string(offset) + "]");
   }
-  return std::make_shared<PgRowResult>(
-      std::make_shared<pqxx::row>(result_.at(offset)));
+  return std::move(std::make_shared<PgRowResult>(
+      std::make_shared<pqxx::row>(result_.at(offset))));
 }
 
 std::unique_ptr<RowResultIterator> PgExecutionResult::begin() const {

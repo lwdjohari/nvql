@@ -29,7 +29,7 @@ PreparedStatementItem::PreparedStatementItem(
     const std::string& query,
     const std::chrono::system_clock::time_point& created)
                 : statement_key_(std::string(statement_key)),
-                  name_(name),
+                  name_(std::string(name)),
                   query_(std::string(query)),
                   created_time_(
                       std::chrono::system_clock::time_point(created)) {}
@@ -68,15 +68,17 @@ std::optional<std::pair<std::string, bool>> PreparedStatementManager::Register(
   auto key = hash_fn_(__NR_CALL_STRING_COMPAT_REF(query));
   auto key_str = GenerateKey(key);
   if (IsKeyExist(key_str)) {
-    return __NR_RETURN_MOVE(std::make_pair(key_str, false));
+    
+    return std::move(std::make_pair(std::move(key_str), false));
   }
 
   statements_.emplace(
-      key_str,
+      std::string(key_str),
       std::move(PreparedStatementItem(
-          key_str, std::string(std::to_string(key)), std::string(query),
+          key_str, std::to_string(key), std::string(query),
           nvm::dates::DateTime::UtcNow().TzTime()->get_sys_time())));
-  return __NR_RETURN_MOVE(std::make_pair(key_str, true));
+  
+  return std::move(std::make_pair(std::move(key_str), true));
 }
 
 bool PreparedStatementManager::IsKeyExist(

@@ -100,7 +100,7 @@ std::optional<std::pair<std::string, bool>> PgConnection::PrepareStatement(
                                  "in prepared_statement_manager_");
   }
 
-  return prepared_statement_manager_->Register(query);
+  return std::move(prepared_statement_manager_->Register(query));
 }
 
 pqxx::connection* PgConnection::Driver() {

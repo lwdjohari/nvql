@@ -74,13 +74,13 @@ ExecutionResultPtr PgWorkTransaction::Execute(
     const parameters::ParameterArgs& args) {
   if (args.empty() ) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result =
         txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -88,12 +88,12 @@ ExecutionResultPtr PgWorkTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
   if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result = txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -121,13 +121,13 @@ ExecutionResultPtr PgNonTransaction::Execute(
     const parameters::ParameterArgs& args) {
   if (args.empty()) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result =
         txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -135,12 +135,12 @@ ExecutionResultPtr PgNonTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
   if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result = txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -168,13 +168,13 @@ ExecutionResultPtr PgReadOnlyTransaction::Execute(
     const parameters::ParameterArgs& args) {
   if (args.empty()) {
     auto result = txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result =
         txn_.exec_prepared(__NR_CALL_STRING_COMPAT_REF(query_key), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -182,12 +182,12 @@ ExecutionResultPtr PgReadOnlyTransaction::ExecuteNonPrepared(
     const __NR_STRING_COMPAT_REF query, const parameters::ParameterArgs& args) {
   if (args.empty()) {
     auto result = txn_.exec(__NR_CALL_STRING_COMPAT_REF(query));
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   } else {
     pqxx::params params;
     TranslateParams(params, args);
     auto result = txn_.exec_params(__NR_CALL_STRING_COMPAT_REF(query), params);
-    return std::make_shared<PgExecutionResult>(std::move(result));
+    return std::move(std::make_shared<PgExecutionResult>(std::move(result)));
   }
 }
 
@@ -273,7 +273,7 @@ ExecutionResultPtr PgTransaction::ExecuteImpl(
                                    __NR_CALL_STRING_COMPAT_REF(query));
   }
 
-  return __NR_RETURN_MOVE(transact_->Execute(key.value().first, args));
+  return std::move(transact_->Execute(key.value().first, args));
 }
 
 ExecutionResultPtr PgTransaction::ExecuteNonPreparedImpl(
@@ -283,7 +283,7 @@ ExecutionResultPtr PgTransaction::ExecuteNonPreparedImpl(
                                StorageType::Postgres);
   }
 
-  return __NR_RETURN_MOVE(transact_->ExecuteNonPrepared(query, args));
+  return std::move(transact_->ExecuteNonPrepared(query, args));
 }
 
 // private:
